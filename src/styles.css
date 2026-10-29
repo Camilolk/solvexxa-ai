@@ -2192,3 +2192,247 @@ textarea:focus {
     animation: none;
   }
 }
+
+
+/* =========================================================
+   SOLVEXXA MOBILE-FIRST UX REFACTOR
+   Consolidated overrides for controls, drawers and spacing
+   ========================================================= */
+:root { --sheet-radius: 22px; }
+.app-shell, .chat-panel, .sidebar, .topbar, .composer,
+.composer-actions, .composer-main-actions, .composer-tools,
+.composer-tools-grid, .toolbar-actions, .settings-modal {
+  box-sizing: border-box;
+  min-width: 0;
+}
+.sidebar {
+  padding: clamp(14px, 3vw, 22px);
+}
+.sidebar > *, .sidebar button, .sidebar input,
+.topbar-settings .toolbar-actions > *,
+.settings-modal > * {
+  min-width: 0;
+}
+.sidebar button, .sidebar a, .sidebar [class*="conversation"] {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+}
+.composer-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  width: min(100%, 900px);
+  margin-inline: auto;
+}
+.composer-main-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  width: 100%;
+}
+.composer-main-actions > *,
+.composer-tools-grid > * {
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 9px;
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  height: auto;
+  padding: 10px 12px;
+  line-height: 1.25;
+  white-space: normal;
+  overflow: hidden;
+  text-align: left;
+}
+.composer-main-actions > * svg,
+.composer-tools-grid > * svg {
+  flex: 0 0 18px;
+  width: 18px;
+  height: 18px;
+}
+.composer-main-actions .marquee-label,
+.composer-tools-grid .marquee-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+.composer-tools {
+  width: 100%;
+}
+.composer-tools > summary {
+  min-height: 46px;
+  padding: 10px 14px;
+  line-height: 1.3;
+  text-align: left;
+}
+.composer-tools > summary > span {
+  flex: 0 1 44%;
+  min-width: 0;
+  margin-left: auto;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.composer-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px 0 4px;
+}
+.composer-tools-grid > button {
+  justify-content: flex-start;
+}
+.composer-tools-grid > button b {
+  flex: 0 0 auto;
+  margin-left: auto;
+  padding: 4px 7px;
+  border-radius: 7px;
+  background: rgba(148,163,184,.12);
+  line-height: 1;
+}
+.composer-tools-grid > label {
+  justify-content: flex-start;
+}
+.composer-tools-grid > label .marquee-label {
+  flex: 0 1 auto;
+}
+.composer-tools-grid > label select {
+  flex: 1 1 42%;
+  width: auto;
+  min-width: 0;
+  max-width: 56%;
+  margin-left: auto;
+}
+.marquee-label {
+  text-overflow: ellipsis;
+}
+@keyframes solvexxa-label-marquee {
+  0%, 12% { transform: translateX(0); }
+  88%, 100% { transform: translateX(-22%); }
+}
+.composer-main-actions > *:focus-visible .marquee-label,
+.composer-tools-grid > *:focus-visible .marquee-label {
+  width: max-content;
+  min-width: max-content;
+  animation: solvexxa-label-marquee 3.8s ease-in-out infinite alternate;
+}
+
+/* Settings dropdown becomes a contained drawer on touch/mobile. */
+.topbar-settings .toolbar-actions {
+  box-sizing: border-box;
+  min-width: 0;
+  overscroll-behavior: contain;
+}
+.modal-backdrop {
+  position: fixed;
+  z-index: 1000;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(16px, env(safe-area-inset-bottom));
+  overflow-y: auto;
+  background: rgba(3, 7, 18, .72);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+.settings-modal {
+  width: min(100%, 760px);
+  max-width: 100%;
+  max-height: min(88dvh, 900px);
+  margin: auto;
+  padding: clamp(16px, 3vw, 26px);
+  overflow: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--border);
+  border-radius: var(--sheet-radius);
+  background: var(--panel-strong);
+  box-shadow: 0 24px 90px rgba(0,0,0,.42);
+}
+.settings-modal input,
+.settings-modal select,
+.settings-modal textarea,
+.settings-modal button {
+  max-width: 100%;
+  min-width: 0;
+}
+.modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 0 0 16px;
+}
+.modal-header h2 { min-width: 0; overflow-wrap: anywhere; }
+@media (max-width: 700px) {
+  .sidebar { padding: 14px 12px calc(18px + env(safe-area-inset-bottom)); }
+  .topbar-settings .toolbar-actions {
+    position: fixed;
+    z-index: 1100;
+    inset: auto 10px max(10px, env(safe-area-inset-bottom));
+    width: auto;
+    max-height: min(78dvh, 720px);
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+    padding: 16px;
+    overflow-x: hidden;
+    overflow-y: auto;
+    border-radius: 22px;
+    box-shadow: 0 -12px 50px rgba(0,0,0,.35), 0 0 0 100vmax rgba(3,7,18,.62);
+    background: var(--panel-strong);
+  }
+  .topbar-settings .toolbar-actions > * {
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 12px;
+    justify-content: space-between;
+    overflow-wrap: anywhere;
+  }
+  .composer-main-actions,
+  .composer-tools-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+  .composer-main-actions > *,
+  .composer-tools-grid > * {
+    min-height: 48px;
+    padding: 10px;
+    font-size: 12px;
+  }
+  .modal-backdrop {
+    align-items: flex-end;
+    padding: 0;
+  }
+  .settings-modal {
+    width: 100%;
+    max-width: none;
+    max-height: min(88dvh, 820px);
+    margin: 0;
+    padding: 20px 16px max(20px, env(safe-area-inset-bottom));
+    border-radius: 22px 22px 0 0;
+    border-bottom: 0;
+    animation: solvexxa-sheet-in .22s ease-out both;
+  }
+}
+@media (max-width: 390px) {
+  .composer-main-actions,
+  .composer-tools-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .composer-tools > summary > span { display: none; }
+  .composer-main-actions > *,
+  .composer-tools-grid > * { min-height: 46px; }
+}
+@keyframes solvexxa-sheet-in {
+  from { transform: translateY(24px); opacity: .7; }
+  to { transform: translateY(0); opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .composer-main-actions > *:focus-visible .marquee-label { animation: none; }
+  .settings-modal { animation: none; }
+}
