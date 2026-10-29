@@ -1048,3 +1048,172 @@ textarea:focus {
     padding: 13px;
   }
 }
+
+
+/* ========================================
+   SOLVEXXA AI — PREMIUM SIDEBAR
+   ======================================== */
+
+.sidebar {
+  position: relative;
+  background:
+    radial-gradient(
+      circle at 0% 0%,
+      rgba(139, 92, 246, 0.13),
+      transparent 38%
+    ),
+    var(--panel);
+  border-right: 1px solid var(--border);
+}
+
+.sidebar-header {
+  padding: 24px 18px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-header .eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  margin-bottom: 8px;
+  color: var(--primary-2);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.sidebar-header .eyebrow::before {
+  content: "✦";
+  font-size: 17px;
+}
+
+.sidebar-header h1 {
+  font-size: 25px;
+  letter-spacing: -0.04em;
+  margin: 0;
+}
+
+.sidebar-header .primary {
+  border-radius: 13px;
+  padding: 10px 15px;
+  font-weight: 700;
+  box-shadow: 0 5px 20px rgba(139, 92, 246, 0.16);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.sidebar-header .primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(139, 92, 246, 0.26);
+}
+
+.conversation-list {
+  padding: 14px 10px;
+  gap: 7px;
+}
+
+.conversation-item {
+  position: relative;
+  width: 100%;
+  padding: 12px 13px;
+  border: 1px solid transparent;
+  border-radius: 13px;
+  background: transparent;
+  text-align: left;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease,
+    transform 0.2s ease;
+}
+
+.conversation-item:hover {
+  background: rgba(139, 92, 246, 0.07);
+  border-color: var(--border);
+}
+
+.conversation-item.selected {
+  background: linear-gradient(
+    110deg,
+    rgba(139, 92, 246, 0.17),
+    rgba(34, 211, 238, 0.05)
+  );
+  border-color: rgba(139, 92, 246, 0.25);
+}
+
+.conversation-item.selected::before {
+  content: "";
+  position: absolute;
+  left: -1px;
+  top: 22%;
+  height: 56%;
+  width: 3px;
+  border-radius: 0 4px 4px 0;
+  background: linear-gradient(180deg, #a78bfa, #67e8f9);
+}
+
+.conversation-item span {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.conversation-item small {
+  display: block;
+  margin-top: 6px;
+  color: var(--muted);
+  font-size: 10px;
+}
+
+.sidebar-actions {
+  padding: 14px;
+  gap: 9px;
+  border-top: 1px solid var(--border);
+  background: rgba(127, 127, 127, 0.025);
+}
+
+.sidebar-actions button,
+.sidebar-actions .file-import-label {
+  min-height: 42px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  padding: 10px 13px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--panel-alt);
+  color: var(--text);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.sidebar-actions button:hover,
+.sidebar-actions .file-import-label:hover {
+  border-color: rgba(139, 92, 246, 0.4);
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.sidebar-actions .file-import-label {
+  box-sizing: border-box;
+}
+
+@media (max-width: 700px) {
+  .sidebar-header {
+    padding: 20px 16px;
+  }
+
+  .conversation-list {
+    padding: 12px 9px;
+  }
+
+  .sidebar-actions {
+    padding: 12px;
+  }
+}
