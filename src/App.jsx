@@ -432,7 +432,7 @@ export default function App() {
 
     setError('');
     setDraft('');
-    setImagePreview(null);
+    setImagePreviews([]);
 
     if (remaining.length === 0) {
       const freshConversation = createDraftConversation();
@@ -520,7 +520,7 @@ export default function App() {
     syncConversation(nextConversation);
     setActiveId(nextConversation.id);
     setDraft('');
-    setImagePreview(null);
+    setImagePreviews([]);
     setIsLoading(true);
     setError('');
     setStatusMessage('Conectando con Solvexxa AI...');
