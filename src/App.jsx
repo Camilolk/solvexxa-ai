@@ -629,7 +629,7 @@ export default function App() {
   const handleDocumentPick = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    const allowed = /\\.(txt|md|csv|json|xml|html|js|jsx|ts|tsx|css|py|java|log)$/i.test(file.name);
+    const allowed = /\.(txt|md|csv|json|xml|html|js|jsx|ts|tsx|css|py|java|log)$/i.test(file.name);
     if (!allowed) {
       setError('Formato no compatible. Puedes adjuntar TXT, MD, CSV, JSON, código o LOG.');
       event.target.value = '';
