@@ -15,6 +15,7 @@ const PERSONALITIES = {
   professional: { label: 'Profesional', prompt: 'Tu nombre es Solvexxa. Mantén un tono profesional, claro, respetuoso y directo. Organiza respuestas complejas y prioriza precisión y utilidad.' },
   creative: { label: 'Creativo', prompt: 'Tu nombre es Solvexxa. Sé imaginativo, curioso y propositivo sin sacrificar precisión. Ofrece ideas originales y desarrolla alternativas prácticas.' },
   developer: { label: 'Programador', prompt: 'Tu nombre es Solvexxa. Actúa como un ingeniero de software senior y mentor. Prioriza soluciones seguras, mantenibles y probables; explica decisiones y entrega código completo cuando sea útil.' },
+  custom: { label: 'Personalizada', prompt: '' },
 };
 
 const DEFAULT_MODELS = [
@@ -200,6 +201,8 @@ export default function App() {
   const [imagePreview, setImagePreview] = useState(null);
   const [fileAttachment, setFileAttachment] = useState(null);
   const [personality, setPersonality] = useState(() => window.localStorage.getItem('solvexxa-personality') || 'friendly');
+  const [customInstructions, setCustomInstructions] = useState(() => window.localStorage.getItem('solvexxa-custom-instructions') || '');
+  const [memoryEnabled, setMemoryEnabled] = useState(() => window.localStorage.getItem('solvexxa-memory-enabled') === 'true');
   const [statusMessage, setStatusMessage] = useState('');
   const [error, setError] = useState('');
   const [isListening, setIsListening] = useState(false);
@@ -535,7 +538,7 @@ export default function App() {
         body: JSON.stringify({
           model: nextConversation.model,
           messages: [
-            { role: 'system', content: PERSONALITIES[personality]?.prompt || PERSONALITIES.friendly.prompt },
+            { role: 'system', content: [PERSONALITIES[personality]?.prompt || PERSONALITIES.friendly.prompt, personality === 'custom' ? customInstructions : '', memoryEnabled ? 'Usa el contexto de mensajes anteriores de esta conversación para mantener continuidad. No afirmes recordar datos fuera de este historial.' : 'No asumas que tienes memoria persistente fuera de esta conversación.'].filter(Boolean).join('\n\n') },
             ...buildRequestMessages(nextConversation.messages, '', null),
           ],
           temperature: 0.7,
@@ -855,6 +858,8 @@ export default function App() {
                 {Object.entries(PERSONALITIES).map(([key, item]) => <option value={key} key={key}>{item.label}</option>)}
               </select>
             </label>
+            <button type="button" onClick={() => { const next = window.prompt('Instrucciones para la personalidad personalizada', customInstructions); if (next !== null) { setCustomInstructions(next.slice(0, 2000)); setPersonality('custom'); setStatusMessage('Personalidad personalizada guardada.'); } }}>Configurar personalidad</button>
+            <button type="button" className={memoryEnabled ? 'primary' : ''} onClick={() => setMemoryEnabled((value) => !value)} title="Usa el contexto del chat actual">Memoria {memoryEnabled ? 'activada' : 'desactivada'}</button>
             <button
               type="button"
               onClick={renameConversation}
