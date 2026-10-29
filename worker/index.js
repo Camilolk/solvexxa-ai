@@ -179,7 +179,7 @@ async function streamOpenRouter({ model, messages, temperature, max_tokens }, en
       model,
       messages: ensureMessageFormat(messages).map((message) => ({
         role: message.role,
-        content: message.image ? buildOpenRouterContent(message) : message.content,
+        content: (message.image || message.images?.length) ? buildOpenRouterContent(message) : message.content,
       })),
       temperature,
       max_tokens,
