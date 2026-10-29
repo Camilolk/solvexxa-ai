@@ -171,6 +171,60 @@ function buildRequestMessages(messages, draft, imagePreviews) {
   return output;
 }
 
+
+async function extractPdfText(file) {
+  const pdfjs = await import(/* @vite-ignore */ 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs');
+  pdfjs.GlobalWorkerOptions.workerSrc = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.worker.min.mjs';
+  const pdf = await pdfjs.getDocument({ data: new Uint8Array(await file.arrayBuffer()) }).promise;
+  if (pdf.numPages > 80) throw new Error('El PDF supera el límite de 80 páginas.');
+  const pages = [];
+  for (let n = 1; n <= pdf.numPages; n += 1) {
+    const page = await pdf.getPage(n);
+    const text = await page.getTextContent();
+    pages.push(text.items.map((item) => item.str || '').join(' '));
+  }
+  const content = pages.join('\n\n');
+  if (!content.trim()) throw new Error('No se encontró texto seleccionable. Si es un PDF escaneado, adjunta sus páginas como imágenes.');
+  return content;
+}
+
+async function extractDocxText(file) {
+  const bytes = new Uint8Array(await file.arrayBuffer());
+  const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+  let end = -1;
+  for (let i = bytes.length - 22; i >= Math.max(0, bytes.length - 65558); i -= 1) {
+    if (view.getUint32(i, true) === 0x06054b50) { end = i; break; }
+  }
+  if (end < 0) throw new Error('El DOCX no tiene una estructura ZIP válida.');
+  let cursor = view.getUint32(end + 16, true);
+  const count = view.getUint16(end + 10, true);
+  let entry = null;
+  for (let i = 0; i < count; i += 1) {
+    if (view.getUint32(cursor, true) !== 0x02014b50) break;
+    const method = view.getUint16(cursor + 10, true);
+    const size = view.getUint32(cursor + 20, true);
+    const nameLen = view.getUint16(cursor + 28, true);
+    const extraLen = view.getUint16(cursor + 30, true);
+    const commentLen = view.getUint16(cursor + 32, true);
+    const offset = view.getUint32(cursor + 42, true);
+    const name = new TextDecoder().decode(bytes.slice(cursor + 46, cursor + 46 + nameLen));
+    if (name === 'word/document.xml') entry = { method, size, offset };
+    cursor += 46 + nameLen + extraLen + commentLen;
+  }
+  if (!entry) throw new Error('No se encontró el contenido principal del Word.');
+  const nameLen = view.getUint16(entry.offset + 26, true);
+  const extraLen = view.getUint16(entry.offset + 28, true);
+  const start = entry.offset + 30 + nameLen + extraLen;
+  const compressed = bytes.slice(start, start + entry.size);
+  let raw;
+  if (entry.method === 0) raw = compressed;
+  else if (entry.method === 8) raw = new Uint8Array(await new Response(new Blob([compressed]).stream().pipeThrough(new DecompressionStream('deflate-raw'))).arrayBuffer());
+  else throw new Error('Compresión DOCX no compatible.');
+  const xml = new DOMParser().parseFromString(new TextDecoder().decode(raw), 'application/xml');
+  if (xml.querySelector('parsererror')) throw new Error('No se pudo interpretar el documento Word.');
+  return Array.from(xml.getElementsByTagName('w:p')).map(p => Array.from(p.getElementsByTagName('w:t')).map(t => t.textContent || '').join('')).filter(Boolean).join('\n');
+}
+
 function getDateGroup(value) {
   const date = new Date(Number(value) || Date.now());
   const now = new Date();
@@ -708,24 +762,36 @@ export default function App() {
   const handleDocumentPick = async (event) => {
     const file = event.target.files?.[0];
     if (!file) return;
-    const allowed = /\.(txt|md|csv|json|xml|html|js|jsx|ts|tsx|css|py|java|log)$/i.test(file.name);
-    if (!allowed) {
-      setError('Formato no compatible todavía. Por ahora puedes adjuntar TXT, MD, CSV, JSON, código o LOG. PDF y Word requieren extracción de texto.');
+    const isPdf = /\.pdf$/i.test(file.name) || file.type === 'application/pdf';
+    const isDocx = /\.docx$/i.test(file.name) || file.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document';
+    const isText = /\.(txt|md|csv|json|xml|html|js|jsx|ts|tsx|css|py|java|log)$/i.test(file.name);
+    if (!isPdf && !isDocx && !isText) {
+      setError('Formato no compatible. Adjunta PDF, DOCX, TXT, MD, CSV, JSON o archivos de código.');
       event.target.value = '';
       return;
     }
-    if (file.size > 350 * 1024) {
-      setError('El archivo supera el límite de 350 KB para poder enviarlo de forma segura.');
+    if (file.size > 12 * 1024 * 1024) {
+      setError('El archivo supera el límite de 12 MB.');
       event.target.value = '';
       return;
     }
     try {
-      const content = await file.text();
+      setStatusMessage('Leyendo documento...');
+      let content;
+      if (isPdf) content = await extractPdfText(file);
+      else if (isDocx) content = await extractDocxText(file);
+      else {
+        if (file.size > 350 * 1024) throw new Error('Los archivos de texto tienen un límite de 350 KB.');
+        content = await file.text();
+      }
+      if (!content.trim()) throw new Error('El documento no contiene texto legible.');
+      if (content.length > 180000) content = content.slice(0, 180000) + '\n\n[Documento truncado por superar el límite de lectura.]';
       setFileAttachment({ name: file.name, type: file.type || 'text/plain', content });
       setError('');
-      setStatusMessage(`Archivo ${file.name} listo para enviar.`);
-    } catch {
-      setError('No se pudo leer el archivo.');
+      setStatusMessage('Documento ' + file.name + ' leído y listo para analizar.');
+    } catch (readError) {
+      setError(readError instanceof Error ? readError.message : 'No se pudo leer el documento.');
+      setStatusMessage('');
     }
     event.target.value = '';
   };
@@ -1001,7 +1067,7 @@ export default function App() {
           <textarea value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Escribe tu mensaje..." aria-label="Escribe tu mensaje" rows={2} disabled={isLoading} />
           <div className="composer-actions">
             <label className="attach-button">Adjuntar imagen<input type="file" accept="image/*" multiple hidden onChange={handleImagePick} /></label>
-            <label className="attach-button">Adjuntar archivo<input type="file" accept=".txt,.md,.csv,.json,.xml,.html,.js,.jsx,.ts,.tsx,.css,.py,.java,.log" hidden onChange={handleDocumentPick} /></label>
+            <label className="attach-button">Adjuntar archivo<input type="file" accept=".pdf,.docx,.txt,.md,.csv,.json,.xml,.html,.js,.jsx,.ts,.tsx,.css,.py,.java,.log" hidden onChange={handleDocumentPick} /></label>
             <button type="button" onClick={toggleVoiceInput}>{isListening ? 'Detener voz' : 'Hablar'}</button>
             <button type="submit" className="primary" disabled={isLoading || (!draft.trim() && !imagePreviews.length && !fileAttachment)}>Enviar</button>
           </div>
