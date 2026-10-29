@@ -266,10 +266,15 @@ export default function App() {
   const [isListening, setIsListening] = useState(false);
   const [historySearch, setHistorySearch] = useState('');
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
+  const [autoSpeak, setAutoSpeak] = useState(() => window.localStorage.getItem('solvexxa-auto-speak') === 'true');
 
   const recognitionRef = useRef(null);
   const menuTouchStartX = useRef(null);
   const abortControllerRef = useRef(null);
+
+  useEffect(() => {
+    window.localStorage.setItem('solvexxa-auto-speak', String(autoSpeak));
+  }, [autoSpeak]);
 
   useEffect(() => {
     window.localStorage.setItem('solvexxa-memory-enabled', String(memoryEnabled));
@@ -629,6 +634,7 @@ export default function App() {
       });
       setActiveId(conversation.id);
       setStatusMessage('Respuesta recibida.');
+      if (autoSpeak) speakResponse(content);
     } catch (err) {
       if (err?.name === 'AbortError') {
         setStatusMessage('Generación detenida.');
@@ -864,6 +870,10 @@ export default function App() {
     window.speechSynthesis.speak(utterance);
   };
 
+  const stopSpeaking = () => {
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+  };
+
   const messages = activeConversation?.messages || [];
 
   return (
@@ -1077,6 +1087,8 @@ export default function App() {
           <textarea value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Escribe tu mensaje..." aria-label="Escribe tu mensaje" rows={2} disabled={isLoading} />
           <div className="composer-actions">
             <label className="attach-button">Adjuntar imagen<input type="file" accept="image/*" multiple hidden onChange={handleImagePick} /></label>
+            <button type="button" className={autoSpeak ? 'primary' : 'attach-button'} onClick={() => setAutoSpeak((value) => !value)} aria-pressed={autoSpeak} title="Leer automáticamente las respuestas">🔊 Voz automática {autoSpeak ? 'activada' : 'desactivada'}</button>
+            <button type="button" className="attach-button" onClick={stopSpeaking}>Detener audio</button>
             <label className="attach-button">Adjuntar archivo<input type="file" accept=".pdf,.docx,.txt,.md,.csv,.json,.xml,.html,.js,.jsx,.ts,.tsx,.css,.py,.java,.log" hidden onChange={handleDocumentPick} /></label>
             <button type="button" onClick={toggleVoiceInput}>{isListening ? 'Detener voz' : 'Hablar'}</button>
             <button type="submit" className="primary" disabled={isLoading || (!draft.trim() && !imagePreviews.length && !fileAttachment)}>Enviar</button>
