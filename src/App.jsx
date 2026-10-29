@@ -1169,6 +1169,20 @@ export default function App() {
             <div className="modal-actions">
               <button type="button" className="attach-button" onClick={() => setWorkspaceCode(fileAttachment.content)}>Restaurar original</button>
               <button type="button" className="attach-button" onClick={() => { if (navigator.clipboard) navigator.clipboard.writeText(workspaceCode).then(() => setStatusMessage('Código de trabajo copiado.')).catch(() => setError('No se pudo copiar el código.')); }}>Copiar versión de trabajo</button>
+              <button type="button" className="attach-button" onClick={() => {
+                const blob = new Blob([workspaceCode], { type: 'text/plain;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const downloadLink = document.createElement('a');
+                const dot = fileAttachment.name.lastIndexOf('.');
+                const filename = dot > 0 ? fileAttachment.name.slice(0, dot) + '.editado' + fileAttachment.name.slice(dot) : fileAttachment.name + '.editado';
+                downloadLink.href = url;
+                downloadLink.download = filename;
+                document.body.appendChild(downloadLink);
+                downloadLink.click();
+                downloadLink.remove();
+                URL.revokeObjectURL(url);
+                setStatusMessage('Versión editada descargada.');
+              }}>⬇ Descargar archivo editado</button>
               <button type="button" className="primary" onClick={() => { setDraft('Revisa esta versión de trabajo y dime si encuentras errores o mejoras:\n\n```\n' + workspaceCode + '\n```'); setCodeWorkspaceOpen(false); }}>Pedir revisión a la IA</button>
             </div>
           </section>
