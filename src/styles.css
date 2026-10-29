@@ -1622,3 +1622,50 @@ textarea:focus {
   .code-block-wrap .code-block { padding: 12px; font-size: 12px; }
   .code-block-header { padding: 7px 9px; }
 }
+
+
+/* ---------- SOLVEXXA AI: PERSONALITY & FILE ATTACHMENTS ---------- */
+.personality-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.personality-control select {
+  max-width: 155px;
+  min-width: 0;
+  padding: 8px 10px;
+  color: var(--text);
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+.file-attachment-card,
+.file-pending {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: fit-content;
+  max-width: 100%;
+  margin: 8px 0;
+  padding: 10px 12px;
+  color: var(--text);
+  background: var(--panel-alt);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+}
+.file-attachment-card strong,
+.file-attachment-card small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.file-attachment-card small { color: var(--muted); margin-top: 2px; }
+.file-attachment-icon { font-size: 22px; }
+.file-pending { justify-content: space-between; font-size: 13px; }
+.file-pending button { padding: 2px 9px; }
+@media (max-width: 700px) {
+  .personality-control { width: 100%; justify-content: space-between; }
+  .personality-control select { flex: 1; }
+  .toolbar-actions { flex-wrap: wrap; }
+}
