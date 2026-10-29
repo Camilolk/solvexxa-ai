@@ -539,7 +539,7 @@ export default function App() {
         body: JSON.stringify({
           model: nextConversation.model,
           messages: [
-            { role: 'system', content: [PERSONALITIES[personality]?.prompt || PERSONALITIES.friendly.prompt, personality === 'custom' ? customInstructions : '', memoryEnabled ? 'Usa el contexto de mensajes anteriores de esta conversación para mantener continuidad. No afirmes recordar datos fuera de este historial.' : 'No asumas que tienes memoria persistente fuera de esta conversación.'].filter(Boolean).join('\n\n') },
+            { role: 'system', content: [PERSONALITIES[personality]?.prompt || PERSONALITIES.friendly.prompt, personality === 'custom' ? customInstructions : '', memoryEnabled ? 'Usa el contexto de mensajes anteriores de esta conversación para mantener continuidad. No afirmes recordar datos fuera de este historial.' : 'No asumas que tienes memoria persistente fuera de esta conversación.', nextConversation.messages.some((message) => message.images?.length || message.image) ? 'El usuario ha adjuntado una o más imágenes. Analiza directamente su contenido visual y responde sobre lo que aparece en ellas. No afirmes que no puedes ver imágenes ni pidas que te las describan si las imágenes están incluidas en el mensaje. Si una imagen no llegó o no puedes acceder a su contenido, dilo con honestidad.' : ''].filter(Boolean).join('\n\n') },
             ...buildRequestMessages(nextConversation.messages, '', null),
           ],
           temperature: 0.7,
