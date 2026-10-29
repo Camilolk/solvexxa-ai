@@ -267,10 +267,28 @@ export default function App() {
   const [historySearch, setHistorySearch] = useState('');
   const [webSearchEnabled, setWebSearchEnabled] = useState(false);
   const [autoSpeak, setAutoSpeak] = useState(() => window.localStorage.getItem('solvexxa-auto-speak') === 'true');
+  const [voiceLanguage, setVoiceLanguage] = useState(() => window.localStorage.getItem('solvexxa-voice-language') || 'es-ES');
+  const [voiceURI, setVoiceURI] = useState(() => window.localStorage.getItem('solvexxa-voice-uri') || '');
+  const [speechRate, setSpeechRate] = useState(() => Number(window.localStorage.getItem('solvexxa-speech-rate') || 1));
+  const [availableVoices, setAvailableVoices] = useState([]);
 
   const recognitionRef = useRef(null);
   const menuTouchStartX = useRef(null);
   const abortControllerRef = useRef(null);
+
+  useEffect(() => {
+    window.localStorage.setItem('solvexxa-voice-language', voiceLanguage);
+    window.localStorage.setItem('solvexxa-voice-uri', voiceURI);
+    window.localStorage.setItem('solvexxa-speech-rate', String(speechRate));
+  }, [voiceLanguage, voiceURI, speechRate]);
+
+  useEffect(() => {
+    if (!('speechSynthesis' in window)) return;
+    const refreshVoices = () => setAvailableVoices(window.speechSynthesis.getVoices());
+    refreshVoices();
+    window.speechSynthesis.addEventListener?.('voiceschanged', refreshVoices);
+    return () => window.speechSynthesis.removeEventListener?.('voiceschanged', refreshVoices);
+  }, []);
 
   useEffect(() => {
     window.localStorage.setItem('solvexxa-auto-speak', String(autoSpeak));
@@ -824,7 +842,7 @@ export default function App() {
 
     if (!recognitionRef.current) {
       recognitionRef.current = new SpeechRecognitionAPI();
-      recognitionRef.current.lang = 'es-ES';
+      recognitionRef.current.lang = voiceLanguage;
       recognitionRef.current.interimResults = false;
 
       recognitionRef.current.onresult = (event) => {
@@ -864,7 +882,10 @@ export default function App() {
     if (!('speechSynthesis' in window) || !text) return;
 
     const utterance = new SpeechSynthesisUtterance(text);
-    utterance.lang = 'es-ES';
+    const selectedVoice = availableVoices.find((voice) => voice.voiceURI === voiceURI);
+    utterance.lang = selectedVoice?.lang || voiceLanguage;
+    if (selectedVoice) utterance.voice = selectedVoice;
+    utterance.rate = speechRate;
 
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
@@ -1089,6 +1110,9 @@ export default function App() {
             <label className="attach-button">Adjuntar imagen<input type="file" accept="image/*" multiple hidden onChange={handleImagePick} /></label>
             <button type="button" className={autoSpeak ? 'primary' : 'attach-button'} onClick={() => setAutoSpeak((value) => !value)} aria-pressed={autoSpeak} title="Leer automáticamente las respuestas">🔊 Voz automática {autoSpeak ? 'activada' : 'desactivada'}</button>
             <button type="button" className="attach-button" onClick={stopSpeaking}>Detener audio</button>
+            <label className="attach-button">Idioma <select value={voiceLanguage} onChange={(event) => { setVoiceLanguage(event.target.value); setVoiceURI(''); if (recognitionRef.current) recognitionRef.current.lang = event.target.value; }}><option value="es-ES">Español</option><option value="en-US">English (US)</option><option value="en-GB">English (UK)</option></select></label>
+            <label className="attach-button">Voz <select value={voiceURI} onChange={(event) => setVoiceURI(event.target.value)}><option value="">Automática</option>{availableVoices.filter((voice) => voice.lang.toLowerCase().startsWith(voiceLanguage.slice(0,2).toLowerCase())).map((voice) => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name}{voice.default ? ' (predeterminada)' : ''}</option>)}</select></label>
+            <label className="attach-button">Velocidad <select value={speechRate} onChange={(event) => setSpeechRate(Number(event.target.value))}><option value={0.8}>Lenta</option><option value={1}>Normal</option><option value={1.2}>Rápida</option><option value={1.4}>Muy rápida</option></select></label>
             <label className="attach-button">Adjuntar archivo<input type="file" accept=".pdf,.docx,.txt,.md,.csv,.json,.xml,.html,.js,.jsx,.ts,.tsx,.css,.py,.java,.log" hidden onChange={handleDocumentPick} /></label>
             <button type="button" onClick={toggleVoiceInput}>{isListening ? 'Detener voz' : 'Hablar'}</button>
             <button type="submit" className="primary" disabled={isLoading || (!draft.trim() && !imagePreviews.length && !fileAttachment)}>Enviar</button>
