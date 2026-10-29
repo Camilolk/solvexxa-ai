@@ -10,6 +10,13 @@ import {
 
 const DEFAULT_MODEL = 'openai/gpt-4o-mini';
 
+const PERSONALITIES = {
+  friendly: { label: 'Cercano y divertido', prompt: 'Tu nombre es Solvexxa. Eres un asistente cercano, amable, expresivo y con humor ligero cuando encaja. Habla en el idioma del usuario, explica con claridad y puedes usar emojis con moderación. Sé útil y honesto; no inventes capacidades.' },
+  professional: { label: 'Profesional', prompt: 'Tu nombre es Solvexxa. Mantén un tono profesional, claro, respetuoso y directo. Organiza respuestas complejas y prioriza precisión y utilidad.' },
+  creative: { label: 'Creativo', prompt: 'Tu nombre es Solvexxa. Sé imaginativo, curioso y propositivo sin sacrificar precisión. Ofrece ideas originales y desarrolla alternativas prácticas.' },
+  developer: { label: 'Programador', prompt: 'Tu nombre es Solvexxa. Actúa como un ingeniero de software senior y mentor. Prioriza soluciones seguras, mantenibles y probables; explica decisiones y entrega código completo cuando sea útil.' },
+};
+
 const DEFAULT_MODELS = [
   { id: 'openai/gpt-4o-mini', name: 'GPT-4o mini', vision: false },
   { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', vision: true },
@@ -190,6 +197,8 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [imagePreview, setImagePreview] = useState(null);
+  const [fileAttachment, setFileAttachment] = useState(null);
+  const [personality, setPersonality] = useState(() => window.localStorage.getItem('solvexxa-personality') || 'friendly');
   const [statusMessage, setStatusMessage] = useState('');
   const [error, setError] = useState('');
   const [isListening, setIsListening] = useState(false);
@@ -488,7 +497,7 @@ export default function App() {
   const handleSend = async () => {
     if (!activeConversation || isLoading) return;
     const trimmed = draft.trim();
-    if (!trimmed && !imagePreview) return;
+    if (!trimmed && !imagePreview && !fileAttachment) return;
 
     const userMessage = {
       id: createId(),
@@ -524,7 +533,10 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: nextConversation.model,
-          messages: buildRequestMessages(nextConversation.messages, '', null),
+          messages: [
+            { role: 'system', content: PERSONALITIES[personality]?.prompt || PERSONALITIES.friendly.prompt },
+            ...buildRequestMessages(nextConversation.messages, '', null),
+          ],
           temperature: 0.7,
           max_tokens: 1200,
           stream: true,
@@ -610,6 +622,31 @@ export default function App() {
     reader.onerror = () => setError('No se pudo leer la imagen.');
 
     reader.readAsDataURL(file);
+    event.target.value = '';
+  };
+
+  const handleDocumentPick = async (event) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    const allowed = /\\.(txt|md|csv|json|xml|html|js|jsx|ts|tsx|css|py|java|log)$/i.test(file.name);
+    if (!allowed) {
+      setError('Formato no compatible. Puedes adjuntar TXT, MD, CSV, JSON, código o LOG.');
+      event.target.value = '';
+      return;
+    }
+    if (file.size > 1024 * 1024) {
+      setError('El archivo supera el límite de 1 MB.');
+      event.target.value = '';
+      return;
+    }
+    try {
+      const content = await file.text();
+      setFileAttachment({ name: file.name, type: file.type || 'text/plain', content });
+      setError('');
+      setStatusMessage(`Archivo ${file.name} listo para enviar.`);
+    } catch {
+      setError('No se pudo leer el archivo.');
+    }
     event.target.value = '';
   };
 
@@ -811,6 +848,12 @@ export default function App() {
           </div>
 
           <div className="toolbar-actions">
+            <label className="personality-control" title="Personalidad de Solvexxa">
+              <span>Personalidad</span>
+              <select value={personality} onChange={(event) => setPersonality(event.target.value)} aria-label="Personalidad de Solvexxa">
+                {Object.entries(PERSONALITIES).map(([key, item]) => <option value={key} key={key}>{item.label}</option>)}
+              </select>
+            </label>
             <button
               type="button"
               onClick={renameConversation}
@@ -854,6 +897,7 @@ export default function App() {
             <article className={`message ${message.role === 'user' ? 'user-message' : 'assistant-message'}`} key={message.id || `${message.role}-${index}`}>
               <div className="message-role">{message.role === 'user' ? 'Tú' : 'Solvexxa AI'}</div>
               {message.image && <img className="message-image" src={message.image} alt="Imagen adjunta" />}
+              {message.attachment && <div className="file-attachment-card"><span className="file-attachment-icon">📄</span><span><strong>{message.attachment.name}</strong><small>Archivo adjunto</small></span></div>}
               <div className="message-content">{parseMessageContent(message.content)}</div>
               {message.role === 'assistant' && <button type="button" className="speak-button" onClick={() => speakResponse(message.content)}>Leer en voz alta</button>}
             </article>
@@ -864,11 +908,13 @@ export default function App() {
         </div>
         <form className="composer" onSubmit={(event) => { event.preventDefault(); handleSend(); }}>
           {imagePreview && <div className="image-preview"><img src={imagePreview} alt="Vista previa del archivo adjunto" /><button type="button" onClick={() => setImagePreview(null)} aria-label="Quitar imagen">×</button></div>}
+          {fileAttachment && <div className="file-pending"><span>📄 {fileAttachment.name}</span><button type="button" onClick={() => setFileAttachment(null)} aria-label="Quitar archivo">×</button></div>}
           <textarea value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Escribe tu mensaje..." aria-label="Escribe tu mensaje" rows={2} disabled={isLoading} />
           <div className="composer-actions">
             <label className="attach-button">Adjuntar imagen<input type="file" accept="image/*" hidden onChange={handleImagePick} /></label>
+            <label className="attach-button">Adjuntar archivo<input type="file" accept=".txt,.md,.csv,.json,.xml,.html,.js,.jsx,.ts,.tsx,.css,.py,.java,.log" hidden onChange={handleDocumentPick} /></label>
             <button type="button" onClick={toggleVoiceInput}>{isListening ? 'Detener voz' : 'Hablar'}</button>
-            <button type="submit" className="primary" disabled={isLoading || (!draft.trim() && !imagePreview)}>Enviar</button>
+            <button type="submit" className="primary" disabled={isLoading || (!draft.trim() && !imagePreview && !fileAttachment)}>Enviar</button>
           </div>
         </form>
       </main>
