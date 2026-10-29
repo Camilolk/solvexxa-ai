@@ -159,6 +159,90 @@ async function callOpenRouter({ model, messages, temperature, max_tokens }, env)
   return 'No se pudo extraer contenido válido de la respuesta.';
 }
 
+
+async function streamOpenRouter({ model, messages, temperature, max_tokens }, env) {
+  const apiKey = env.OPENROUTER_API_KEY;
+  if (!apiKey) throw new Error('Falta OPENROUTER_API_KEY. Configúralo en el entorno seguro del worker.');
+  if (!isAllowedModel(model, env)) throw new Error('Modelo no autorizado.');
+
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': env.OPENROUTER_SITE_URL || 'https://example.com',
+      'X-Title': env.OPENROUTER_SITE_NAME || 'Solvexxa AI',
+    },
+    body: JSON.stringify({
+      model,
+      messages: ensureMessageFormat(messages).map((message) => ({
+        role: message.role,
+        content: message.image ? buildOpenRouterContent(message) : message.content,
+      })),
+      temperature,
+      max_tokens,
+      stream: true,
+    }),
+  });
+
+  if (!response.ok) {
+    let detail = '';
+    try {
+      const data = await response.json();
+      detail = data?.error?.message || '';
+    } catch {}
+    throw new Error(detail || `OpenRouter devolvió HTTP ${response.status}.`);
+  }
+  if (!response.body) throw new Error('El proveedor no habilitó el flujo de respuesta.');
+
+  const decoder = new TextDecoder();
+  const encoder = new TextEncoder();
+  let buffer = '';
+  const reader = response.body.getReader();
+
+  return new ReadableStream({
+    async pull(controller) {
+      try {
+        while (true) {
+          const { value, done } = await reader.read();
+          if (done) {
+            buffer += decoder.decode();
+            if (buffer.trim()) processLines(buffer, controller, encoder);
+            controller.close();
+            return;
+          }
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split(/\r?\n/);
+          buffer = lines.pop() || '';
+          processLines(lines.join('\n'), controller, encoder);
+        }
+      } catch (error) {
+        controller.error(error);
+      }
+    },
+    async cancel() {
+      await reader.cancel();
+    },
+  });
+}
+
+function processLines(text, controller, encoder) {
+  for (const line of text.split(/\r?\n/)) {
+    if (!line.startsWith('data:')) continue;
+    const payload = line.slice(5).trim();
+    if (!payload || payload === '[DONE]') continue;
+    try {
+      const event = JSON.parse(payload);
+      const delta = event?.choices?.[0]?.delta?.content;
+      if (typeof delta === 'string' && delta) controller.enqueue(encoder.encode(delta));
+      else if (Array.isArray(delta)) {
+        const joined = delta.filter((part) => part?.type === 'text').map((part) => part.text || '').join('');
+        if (joined) controller.enqueue(encoder.encode(joined));
+      }
+    } catch {}
+  }
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get('Origin');
@@ -207,6 +291,23 @@ export default {
 
         if (JSON.stringify(body).length > 500000) {
           return json({ error: 'La solicitud es demasiado grande.' }, 413, corsHeaders);
+        }
+
+        if (body?.stream === true) {
+          try {
+            const stream = await streamOpenRouter({ model, messages, temperature, max_tokens }, env);
+            return new Response(stream, {
+              status: 200,
+              headers: {
+                ...corsHeaders,
+                'Content-Type': 'text/plain; charset=utf-8',
+                'Cache-Control': 'no-cache, no-transform',
+                'X-Content-Type-Options': 'nosniff',
+              },
+            });
+          } catch (error) {
+            return json({ error: error instanceof Error ? error.message : 'Error de streaming.' }, 500, corsHeaders);
+          }
         }
 
         const content = await callOpenRouter({ model, messages, temperature, max_tokens }, env);
