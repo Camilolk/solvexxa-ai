@@ -124,7 +124,7 @@ export default function App() {
         next.sort((a, b) => (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt));
         setConversations(next);
         setActiveId(next[0]?.id || null);
-      } catch (error) {
+      } catch (err) {
         const fallback = [createDraftConversation()];
         setConversations(fallback);
         setActiveId(fallback[0].id);
@@ -143,17 +143,36 @@ export default function App() {
   }, [conversations, activeId]);
 
   useEffect(() => {
-    fetch('/api/models')
-      .then((response) => (response.ok ? response.json() : Promise.resolve({ models: DEFAULT_MODELS })))
-      .then((data) => {
+    let cancelled = false;
+
+    const loadModels = async () => {
+      try {
+        const response = await fetch('/api/models');
+        if (!response.ok) {
+          throw new Error('No se pudo cargar la lista de modelos.');
+        }
+
+        const data = await response.json();
+        if (cancelled) return;
+
         const list = Array.isArray(data?.models) && data.models.length ? data.models : DEFAULT_MODELS;
         setModels(list);
-        if (!list.some((option) => option.id === model)) setModel(list[0].id);
-      })
-      .catch(() => {
-        setModels(DEFAULT_MODELS);
-      });
-  }, [model]);
+        if (!list.some((option) => option.id === model)) {
+          setModel(list[0].id);
+        }
+      } catch (err) {
+        if (!cancelled) {
+          setModels(DEFAULT_MODELS);
+          setStatusMessage('Usando modelos por defecto.');
+        }
+      }
+    };
+
+    loadModels();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const activeConversation = useMemo(
     () => conversations.find((item) => item.id === activeId) || conversations[0] || null,
@@ -161,10 +180,18 @@ export default function App() {
   );
 
   const syncConversation = (updated) => {
+    const previous = conversations.find((item) => item.id === updated.id);
+    const normalizedTitle =
+      typeof updated.title === 'string' && updated.title.trim()
+        ? updated.title.trim()
+        : previous?.title && previous.title.trim()
+          ? previous.title.trim()
+          : getConversationTitle(updated.messages);
+
     const normalized = {
       ...updated,
       updatedAt: Date.now(),
-      title: getConversationTitle(updated.messages),
+      title: normalizedTitle,
     };
 
     setConversations((prev) => {
@@ -191,7 +218,10 @@ export default function App() {
     const title = window.prompt('Escribe el nuevo título', activeConversation.title || 'Nueva conversación');
     if (!title) return;
 
-    const updated = { ...activeConversation, title: title.trim() || 'Nueva conversación' };
+    const updated = {
+      ...activeConversation,
+      title: title.trim() || 'Nueva conversación',
+    };
     syncConversation(updated);
     setStatusMessage('Título actualizado.');
   };
@@ -275,7 +305,13 @@ export default function App() {
         }),
       });
 
-      const data = await response.json();
+      let data;
+      try {
+        data = await response.json();
+      } catch (err) {
+        throw new Error('La respuesta del servidor no era JSON válido.');
+      }
+
       if (!response.ok) {
         throw new Error(data?.error || 'No se pudo obtener una respuesta válida.');
       }
@@ -295,7 +331,9 @@ export default function App() {
       setActiveId(updated.id);
       setStatusMessage('Respuesta recibida.');
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Ocurrió un error inesperado.');
+      const message = err instanceof Error ? err.message : 'Ocurrió un error inesperado.';
+      setError(message);
+      setStatusMessage('El mensaje se guardó localmente, pero la IA no respondió.');
     } finally {
       setIsLoading(false);
     }
