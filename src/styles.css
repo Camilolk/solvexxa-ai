@@ -1816,3 +1816,121 @@ textarea:focus {
   .composer-tools-grid { grid-template-columns:1fr 1fr; }
 }
 @media(prefers-reduced-motion:reduce) { .composer-main-actions .send-button { animation:none; } }
+
+
+/* ---------- SOLVEXXA UI POLISH: SOFT SURFACES + COMPOSER ---------- */
+.welcome-screen { padding-block: clamp(30px, 5vh, 58px); }
+.welcome-screen > p:not(.eyebrow) { margin-bottom: 36px; }
+.suggestion-grid { gap: 16px; }
+.suggestion-card {
+  border: 1px solid transparent;
+  border-radius: 15px;
+  background: color-mix(in srgb, var(--panel-alt) 88%, white 12%);
+  box-shadow: 0 5px 18px rgba(0,0,0,.07);
+  transition: transform .2s ease, background .2s ease, box-shadow .2s ease;
+}
+.suggestion-card:hover {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--panel-alt) 78%, #a78bfa 22%);
+  box-shadow: 0 12px 28px rgba(99,102,241,.13);
+}
+.composer { gap: 16px; padding-top: 22px; }
+.composer-input-wrap {
+  position: relative;
+  width: min(100%, 900px);
+  margin: 0 auto;
+}
+.composer-input-wrap textarea {
+  display: block;
+  width: 100%;
+  min-height: 104px;
+  max-height: 240px;
+  padding: 18px 64px 58px 20px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background: var(--panel-strong);
+  box-shadow: 0 10px 32px rgba(0,0,0,.09), inset 0 1px rgba(255,255,255,.035);
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.composer-input-wrap textarea:focus {
+  outline: none;
+  border-color: rgba(167,139,250,.65);
+  box-shadow: 0 0 0 3px rgba(139,92,246,.10), 0 12px 34px rgba(0,0,0,.1);
+}
+.composer-send-button {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  padding: 0;
+  border: 0;
+  border-radius: 14px;
+  color: #fff;
+  font-size: 22px;
+  font-weight: 800;
+  background: linear-gradient(135deg,#7c3aed,#6366f1 58%,#0891b2);
+  box-shadow: 0 7px 20px rgba(99,102,241,.28);
+  transition: transform .18s ease, filter .18s ease, opacity .18s ease;
+}
+.composer-send-button:hover:not(:disabled) { transform: translateY(-2px); filter: brightness(1.08); }
+.composer-send-button:disabled { opacity: .42; cursor: not-allowed; }
+.composer-main-actions { width: min(100%,900px); grid-template-columns: repeat(3,minmax(0,1fr)); }
+.composer-main-actions > * { min-height: 42px; border-radius: 13px; }
+.composer-tools { width: min(100%,900px); }
+.composer-tools-grid {
+  grid-template-columns: repeat(3,minmax(0,1fr));
+  gap: 10px;
+  padding: 14px 0 2px;
+}
+.composer-tools-grid > * {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  min-height: 48px;
+  height: 48px;
+  justify-content: space-between;
+  padding: 0 13px;
+  border: 1px solid var(--border);
+  border-radius: 13px;
+  background: var(--panel-alt);
+  line-height: 1.2;
+}
+.composer-tools-grid label { overflow: hidden; }
+.composer-tools-grid select {
+  flex: 0 1 48%;
+  width: 48%;
+  min-width: 0;
+  height: 30px;
+  padding: 0 7px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--panel-strong);
+  color: var(--text);
+  font: inherit;
+}
+.composer-tools-grid button.primary { background: rgba(124,58,237,.2); border-color: rgba(167,139,250,.35); }
+.composer-tools-grid button:hover,
+.composer-main-actions > *:hover { filter: brightness(1.08); }
+.message-list { gap: 26px; padding-top: 38px; padding-bottom: 38px; }
+@media (max-width: 900px) {
+  .composer { gap: 13px; }
+  .composer-input-wrap { width: 100%; }
+  .composer-input-wrap textarea { min-height: 96px; }
+  .composer-tools-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 480px) {
+  .welcome-screen > p:not(.eyebrow) { margin-bottom: 27px; }
+  .suggestion-grid { gap: 12px; }
+  .suggestion-card { border-radius: 14px; }
+  .composer-input-wrap textarea { min-height: 94px; padding: 15px 60px 55px 15px; border-radius: 19px; }
+  .composer-send-button { right: 10px; bottom: 10px; width: 40px; height: 40px; min-width: 40px; }
+  .composer-main-actions { grid-template-columns: repeat(3,minmax(0,1fr)); gap: 7px; }
+  .composer-main-actions > * { min-height: 42px; font-size: 10px; padding-inline: 5px; }
+  .composer-tools-grid { gap: 8px; }
+  .composer-tools-grid > * { min-height: 46px; height: 46px; padding-inline: 9px; font-size: 10px; }
+  .composer-tools-grid select { font-size: 10px; }
+}
