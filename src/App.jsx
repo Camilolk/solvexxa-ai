@@ -153,6 +153,7 @@ function buildRequestMessages(messages, draft, imagePreview) {
     role: message.role,
     content: message.content,
     ...(message.image ? { image: message.image } : {}),
+    ...(message.attachment?.content ? { content: `${message.content}\\n\\n[Contenido del archivo: ${message.attachment.name}]\\n${message.attachment.content}` } : {}),
   }));
 
   if (draft && draft.trim()) {
