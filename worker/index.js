@@ -15,8 +15,39 @@ const json = (data, status = 200) =>
     },
   });
 
+function buildOpenRouterContent(message) {
+  const text = typeof message?.content === 'string' ? message.content : '';
+
+  if (message?.image) {
+    return [
+      { type: 'text', text: text || 'Imagen adjunta' },
+      { type: 'image_url', image_url: { url: message.image } },
+    ];
+  }
+
+  if (typeof message?.content === 'string') {
+    return [{ type: 'text', text: message.content }];
+  }
+
+  if (Array.isArray(message?.content)) {
+    return message.content.map((part) => {
+      if (part?.type === 'image_url') {
+        return { type: 'image_url', image_url: { url: part.image_url?.url } };
+      }
+      if (part?.type === 'text') {
+        return { type: 'text', text: part.text || '' };
+      }
+      return null;
+    }).filter(Boolean);
+  }
+
+  return [{ type: 'text', text: 'Mensaje recibido' }];
+}
+
 function normalizeMessageContent(message) {
-  const content = message?.content ?? '';
+  if (!message || typeof message !== 'object') return null;
+
+  const content = message.content ?? '';
 
   if (typeof content === 'string') {
     return { role: message.role || 'user', content };
@@ -37,12 +68,9 @@ function normalizeMessageContent(message) {
 
 function ensureMessageFormat(messages) {
   if (!Array.isArray(messages)) return [];
+
   return messages
-    .map((message) => {
-      if (!message || typeof message !== 'object') return null;
-      const normalized = normalizeMessageContent(message);
-      return normalized;
-    })
+    .map((message) => normalizeMessageContent(message))
     .filter(Boolean);
 }
 
@@ -56,8 +84,7 @@ async function callOpenRouter({ model, messages, temperature, max_tokens }, env)
     model,
     messages: ensureMessageFormat(messages).map((msg) => ({
       role: msg.role,
-      content: msg.content,
-      ...(msg.image ? { image: msg.image } : {}),
+      content: msg.image ? buildOpenRouterContent(msg) : msg.content,
     })),
     temperature,
     max_tokens,
@@ -84,10 +111,7 @@ async function callOpenRouter({ model, messages, temperature, max_tokens }, env)
   const answer = data?.choices?.[0]?.message?.content;
   if (typeof answer === 'string') return answer;
   if (Array.isArray(answer)) {
-    return answer
-      .filter((part) => part?.type === 'text')
-      .map((part) => part.text)
-      .join('\n');
+    return answer.filter((part) => part?.type === 'text').map((part) => part.text).join('\n');
   }
 
   return 'No se pudo extraer contenido válido de la respuesta.';
@@ -113,6 +137,13 @@ export default {
 
     if (request.method === 'GET' && url.pathname === '/healthz') {
       return json({ ok: true, service: 'solvexxa-ai-worker' });
+    }
+
+    if (request.method === 'GET' && env.ASSETS) {
+      const asset = await env.ASSETS.fetch(request);
+      if (asset.status !== 404) {
+        return asset;
+      }
     }
 
     if (request.method !== 'POST') {
