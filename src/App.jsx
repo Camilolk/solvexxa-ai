@@ -210,6 +210,7 @@ export default function App() {
   const [error, setError] = useState('');
   const [isListening, setIsListening] = useState(false);
   const [historySearch, setHistorySearch] = useState('');
+  const [webSearchEnabled, setWebSearchEnabled] = useState(false);
 
   const recognitionRef = useRef(null);
   const menuTouchStartX = useRef(null);
@@ -603,7 +604,21 @@ export default function App() {
     setDraft('');
     setImagePreviews([]);
     setFileAttachment(null);
-    await requestAssistantReply(nextConversation, nextConversation.messages);
+    let requestMessages = nextConversation.messages;
+    if (webSearchEnabled && trimmed) {
+      setStatusMessage('Buscando información en internet...');
+      try {
+        const searchResponse = await fetch('/api/search?q=' + encodeURIComponent(trimmed));
+        const searchData = await searchResponse.json();
+        if (!searchResponse.ok) throw new Error(searchData?.error || 'No se pudo realizar la búsqueda.');
+        const searchContext = (searchData.results || []).map((item, index) => '[' + (index + 1) + '] ' + item.title + '\n' + item.extract + '\nFuente: ' + item.url).join('\n\n');
+        requestMessages = [...requestMessages, { role: 'system', content: 'Resultados web. Basa en ellos los datos actuales, reconoce límites y cita los enlaces Markdown.\n\n' + searchContext }];
+      } catch (searchError) {
+        setError('Búsqueda web: ' + searchError.message);
+        setStatusMessage('Continuando sin resultados web.');
+      }
+    }
+    await requestAssistantReply(nextConversation, requestMessages);
   };
 
   const stopGeneration = () => {
@@ -919,6 +934,7 @@ export default function App() {
                 {models.map((option) => <option value={option.id} key={option.id}>{option.name}</option>)}
               </select>
             </label>
+            <button type="button" className={webSearchEnabled ? "primary" : ""} onClick={() => setWebSearchEnabled((value) => !value)}>🌐 Búsqueda {webSearchEnabled ? "activada" : "desactivada"}</button>
             <label className="personality-control" title="Personalidad de Solvexxa">
               <span>Personalidad</span>
               <select value={personality} onChange={(event) => setPersonality(event.target.value)} aria-label="Personalidad de Solvexxa">
