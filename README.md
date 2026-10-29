@@ -1,85 +1,124 @@
 # Solvexxa AI
 
-Solvexxa AI es una aplicación web moderna de chat con IA pensada para Android, escritorio y despliegue gratuito con Cloudflare.
-
-## Stack
-
-- Frontend: React + Vite
-- Backend compatible con Cloudflare Workers
-- Persistencia local: IndexedDB para historial del navegador
-- Integración IA: OpenRouter API
-- PWA: manifest + service worker
+Solvexxa AI es una PWA de chat con IA para Android, escritorio y web, con historial local en IndexedDB y un worker seguro de Cloudflare.
 
 ## Requisitos
 
 - Node.js 18+
 - npm
-- Cuenta en OpenRouter con una API key
-- (Opcional) acceso a Cloudflare Pages / Workers para desplegar
+- Una cuenta en OpenRouter con clave API activa
+- Cloudflare account para producción
 
-## Variables de entorno
+## Configuración local
 
-Copia `.env.example` y configura tu clave real, o usa las variables secretas del worker al desplegar.
+1. Instala dependencias:
+
+```bash
+npm install
+```
+
+2. Crea tu entorno local a partir del ejemplo:
+
+```bash
+cp .env.example .env.local
+```
+
+3. Completa las variables reales del backend:
+
+```env
+OPENROUTER_API_KEY=tu_clave_real
+OPENROUTER_MODEL=openai/gpt-4o-mini
+OPENROUTER_SITE_URL=https://tu-dominio.com
+OPENROUTER_SITE_NAME=Solvexxa AI
+ALLOWED_MODELS=openai/gpt-4o-mini,anthropic/claude-3.5-sonnet,google/gemini-2.0-flash-exp
+```
 
 Importante:
-- Nunca guardes la clave en el frontend.
-- Nunca la subas a GitHub ni la guardes en localStorage.
+- No guardes la key en el frontend.
+- No la subas a GitHub.
+- NUNCA la guardes en localStorage ni IndexedDB.
 
 ## Ejecutar localmente
 
+Frontend:
+
 ```bash
-npm install
 npm run dev
 ```
 
-La app quedará disponible en:
-
-- Frontend: http://localhost:5173
-- Worker local: http://localhost:8787
-
-## Configuración de OpenRouter
-
-1. Crea una cuenta en https://openrouter.ai
-2. Genera una clave API
-3. Configura la variable `OPENROUTER_API_KEY` en tu entorno de producción o en `.env.local` para desarrollo local si usas un proxy local
-4. Opcionalmente ajusta:
-   - `OPENROUTER_MODEL`
-   - `OPENROUTER_SITE_URL`
-   - `OPENROUTER_SITE_NAME`
-
-## Despliegue gratis
-
-### Cloudflare Workers
+Worker local:
 
 ```bash
-npm install
-npx wrangler login
-npx wrangler secret put OPENROUTER_API_KEY
-npx wrangler deploy worker/index.js
+npm run worker:dev
 ```
 
-Luego configura tu dominio o usa la URL pública que Cloudflare te asigne.
+Endpoints esperados:
 
-## Limitaciones reales
+- Frontend: http://localhost:5173
+- Worker: http://localhost:8787/healthz
+- Proxy API Vite: /api/chat y /api/models
 
-- La API de OpenRouter requiere una clave válida para responder.
-- El plan gratuito de Cloudflare y OpenRouter puede tener límites de uso y tokens.
-- La app de voz depende del soporte del navegador del dispositivo.
-- La PWA requiere HTTPS real para instalación completa en Android.
+## Validación de compilación
 
-## Historial local
+```bash
+npm run build
+```
 
-La aplicación guarda conversaciones en IndexedDB del navegador para que puedan persistir tras recargar la página. No se envía información sensible a la caché del service worker.
+Si el build falla, corrige primero los errores de compilación antes de desplegar.
 
-## Archivos clave
+## Pruebas
 
-- `src/App.jsx`: interfaz principal
-- `src/lib/storage.js`: persistencia local
-- `worker/index.js`: backend seguro para OpenRouter
-- `public/sw.js`: service worker de PWA
-- `public/manifest.webmanifest`: configuración de instalación
-- `.env.example`: ejemplo de variables sin secretos reales
+```bash
+npm test
+```
+
+La suite disponible debe comprobar rutas del worker y utilidades clave. Si el entorno no tiene dependencias instaladas, no se ejecutará.
+
+## Despliegue en Cloudflare Workers + Assets
+
+1. Inicia sesión:
+
+```bash
+npx wrangler login
+```
+
+2. Configura los secretos:
+
+```bash
+npx wrangler secret put OPENROUTER_API_KEY
+npx wrangler secret put OPENROUTER_MODEL
+npx wrangler secret put OPENROUTER_SITE_URL
+npx wrangler secret put OPENROUTER_SITE_NAME
+```
+
+3. Compila el frontend:
+
+```bash
+npm run build
+```
+
+4. Despliega el worker y los assets:
+
+```bash
+npx wrangler deploy
+```
+
+La configuración del proyecto usa `wrangler.json` para servir el directorio `dist` como assets y resolver `/api/*` usando el worker.
+
+## Seguridad
+
+- La API key vive exclusivamente en Cloudflare Worker / entorno seguro.
+- El worker valida CORS, modelos permitidos y tamaño de solicitudes.
+- Las rutas `/api/*` no se cachean en el service worker.
+- La app no guarda secretos ni tokens del backend.
+
+## PWA y Android
+
+- El manifiesto se sirve desde `/manifest.webmanifest`.
+- El service worker solo cachea el shell de la app y evita `/api/*`.
+- La UI está adaptada para pantallas pequeñas y móviles.
+- La instalación en Android requiere HTTPS real, normalmente vía Cloudflare Pages o dominio con TLS activo.
 
 ## Estado actual
 
-La base funcional se dejó lista para configurar modelos, probar en local y desplegar. Para que la IA responda de verdad, debe configurarse la clave real de OpenRouter en el entorno de ejecución.
+La base del proyecto ya está corregida y preparada para validación real. La funcionalidad completa con OpenRouter requiere una clave válida configurada en el entorno seguro del worker y una validación final con build y runtime.
