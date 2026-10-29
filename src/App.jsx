@@ -213,6 +213,7 @@ export default function App() {
 
   const recognitionRef = useRef(null);
   const menuTouchStartX = useRef(null);
+  const abortControllerRef = useRef(null);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -501,6 +502,83 @@ export default function App() {
       });
   };
 
+  const requestAssistantReply = async (conversation, requestMessages) => {
+    if (abortControllerRef.current) return;
+    const controller = new AbortController();
+    abortControllerRef.current = controller;
+    setIsLoading(true);
+    setError('');
+    setStatusMessage('Conectando con Solvexxa AI...');
+
+    const assistantMessage = {
+      id: createId(),
+      role: 'assistant',
+      content: '',
+      createdAt: Date.now(),
+    };
+
+    try {
+      const response = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        signal: controller.signal,
+        body: JSON.stringify({
+          model: conversation.model || model,
+          messages: [
+            { role: 'system', content: [PERSONALITIES[personality]?.prompt || PERSONALITIES.friendly.prompt, personality === 'custom' ? customInstructions : '', memoryEnabled ? 'Usa el contexto de mensajes anteriores de esta conversación para mantener continuidad. No afirmes recordar datos fuera de este historial.' : 'No asumas que tienes memoria persistente fuera de esta conversación.', requestMessages.some((message) => message.images?.length || message.image) ? 'El usuario ha adjuntado una o más imágenes. Analiza directamente su contenido visual y responde sobre lo que aparece en ellas. No afirmes que no puedes ver imágenes ni pidas que te las describan si las imágenes están incluidas en el mensaje. Si una imagen no llegó o no puedes acceder a su contenido, dilo con honestidad.' : ''].filter(Boolean).join('\\n\\n') },
+            ...buildRequestMessages(requestMessages, '', null),
+          ],
+          temperature: 0.7,
+          max_tokens: 1200,
+          stream: true,
+        }),
+      });
+
+      if (!response.ok) {
+        let detail = 'No se pudo obtener una respuesta válida.';
+        try {
+          const data = await response.json();
+          detail = data?.error || detail;
+        } catch {}
+        throw new Error(detail);
+      }
+      if (!response.body) throw new Error('Este navegador no permite recibir respuestas en streaming.');
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let content = '';
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        content += decoder.decode(value, { stream: true });
+        syncConversation({
+          ...conversation,
+          messages: [...requestMessages, { ...assistantMessage, content }],
+        });
+      }
+      content += decoder.decode();
+      if (!content) throw new Error('La IA terminó sin enviar contenido.');
+
+      syncConversation({
+        ...conversation,
+        messages: [...requestMessages, { ...assistantMessage, content }],
+      });
+      setActiveId(conversation.id);
+      setStatusMessage('Respuesta recibida.');
+    } catch (err) {
+      if (err?.name === 'AbortError') {
+        setStatusMessage('Generación detenida.');
+        return;
+      }
+      const message = err instanceof Error ? err.message : 'Ocurrió un error inesperado.';
+      setError(message);
+      setStatusMessage('El mensaje se guardó localmente, pero la IA no respondió.');
+    } finally {
+      if (abortControllerRef.current === controller) abortControllerRef.current = null;
+      setIsLoading(false);
+    }
+  };
+
   const handleSend = async () => {
     if (!activeConversation || isLoading) return;
     const trimmed = draft.trim();
@@ -524,83 +602,44 @@ export default function App() {
     setActiveId(nextConversation.id);
     setDraft('');
     setImagePreviews([]);
-    setIsLoading(true);
-    setError('');
-    setStatusMessage('Conectando con Solvexxa AI...');
+    setFileAttachment(null);
+    await requestAssistantReply(nextConversation, nextConversation.messages);
+  };
 
-    const assistantMessage = {
-      id: createId(),
-      role: 'assistant',
-      content: '',
-      createdAt: Date.now(),
-    };
+  const stopGeneration = () => {
+    abortControllerRef.current?.abort();
+  };
 
-    try {
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: nextConversation.model,
-          messages: [
-            { role: 'system', content: [PERSONALITIES[personality]?.prompt || PERSONALITIES.friendly.prompt, personality === 'custom' ? customInstructions : '', memoryEnabled ? 'Usa el contexto de mensajes anteriores de esta conversación para mantener continuidad. No afirmes recordar datos fuera de este historial.' : 'No asumas que tienes memoria persistente fuera de esta conversación.', nextConversation.messages.some((message) => message.images?.length || message.image) ? 'El usuario ha adjuntado una o más imágenes. Analiza directamente su contenido visual y responde sobre lo que aparece en ellas. No afirmes que no puedes ver imágenes ni pidas que te las describan si las imágenes están incluidas en el mensaje. Si una imagen no llegó o no puedes acceder a su contenido, dilo con honestidad.' : ''].filter(Boolean).join('\n\n') },
-            ...buildRequestMessages(nextConversation.messages, '', null),
-          ],
-          temperature: 0.7,
-          max_tokens: 1200,
-          stream: true,
-        }),
-      });
-
-      if (!response.ok) {
-        let detail = 'No se pudo obtener una respuesta válida.';
-        try {
-          const data = await response.json();
-          detail = data?.error || detail;
-        } catch {}
-        throw new Error(detail);
-      }
-
-      if (!response.body) {
-        throw new Error('Este navegador no permite recibir respuestas en streaming.');
-      }
-
-      const reader = response.body.getReader();
-      const decoder = new TextDecoder();
-      let content = '';
-      let hasSavedAssistant = false;
-
-      while (true) {
-        const { value, done } = await reader.read();
-        if (done) break;
-        content += decoder.decode(value, { stream: true });
-        const partialMessage = { ...assistantMessage, content };
-        const updated = {
-          ...nextConversation,
-          messages: [...nextConversation.messages, partialMessage],
-        };
-        syncConversation(updated);
-        hasSavedAssistant = true;
-      }
-
-      content += decoder.decode();
-      if (!content && !hasSavedAssistant) {
-        throw new Error('La IA terminó sin enviar contenido.');
-      }
-
-      const finalMessage = { ...assistantMessage, content: content || 'No se recibió contenido de la respuesta.' };
-      syncConversation({
-        ...nextConversation,
-        messages: [...nextConversation.messages, finalMessage],
-      });
-      setActiveId(nextConversation.id);
-      setStatusMessage('Respuesta recibida.');
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Ocurrió un error inesperado.';
-      setError(message);
-      setStatusMessage('El mensaje se guardó localmente, pero la IA no respondió.');
-    } finally {
-      setIsLoading(false);
+  const regenerateResponse = async () => {
+    if (!activeConversation || isLoading) return;
+    const currentMessages = activeConversation.messages || [];
+    let lastUserIndex = -1;
+    for (let i = currentMessages.length - 1; i >= 0; i -= 1) {
+      if (currentMessages[i].role === 'user') { lastUserIndex = i; break; }
     }
+    if (lastUserIndex < 0) return;
+    const requestMessages = currentMessages.slice(0, lastUserIndex + 1);
+    const updated = { ...activeConversation, messages: requestMessages };
+    syncConversation(updated);
+    await requestAssistantReply(updated, requestMessages);
+  };
+
+  const editUserMessage = async (messageIndex) => {
+    if (!activeConversation || isLoading) return;
+    const original = activeConversation.messages?.[messageIndex];
+    if (!original || original.role !== 'user') return;
+    const revised = window.prompt('Edita tu mensaje:', original.content || '');
+    if (revised === null) return;
+    if (!revised.trim() && !original.images?.length && !original.image && !original.attachment) {
+      setStatusMessage('El mensaje no puede quedar vacío.');
+      return;
+    }
+    const requestMessages = activeConversation.messages.slice(0, messageIndex + 1).map((message, index) =>
+      index === messageIndex ? { ...message, content: revised.trim() } : message
+    );
+    const updated = { ...activeConversation, messages: requestMessages };
+    syncConversation(updated);
+    await requestAssistantReply(updated, requestMessages);
   };
 
   const compressImage = (file) => new Promise((resolve, reject) => {
@@ -933,10 +972,10 @@ export default function App() {
               {(message.images || (message.image ? [message.image] : [])).map((image, imageIndex) => <img className="message-image" src={image} alt={`Imagen adjunta ${imageIndex + 1}`} key={imageIndex} />)}
               {message.attachment && <div className="file-attachment-card"><span className="file-attachment-icon">📄</span><span><strong>{message.attachment.name}</strong><small>Archivo adjunto</small></span></div>}
               <div className="message-content">{parseMessageContent(message.content)}</div>
-              {message.role === 'assistant' && <button type="button" className="speak-button" onClick={() => speakResponse(message.content)}>Leer en voz alta</button>}
+              {message.role === 'assistant' && <div className="message-tools"><button type="button" className="speak-button" onClick={() => speakResponse(message.content)}>Leer en voz alta</button>{index === messages.length - 1 && !isLoading && <button type="button" className="speak-button" onClick={regenerateResponse}>Regenerar</button>}</div>}{message.role === 'user' && !isLoading && <button type="button" className="speak-button" onClick={() => editUserMessage(index)}>Editar mensaje</button>}
             </article>
           ))}
-          {isLoading && <div className="loading-indicator">Solvexxa está pensando...</div>}
+          {isLoading && <div className="loading-indicator">Solvexxa está pensando... <button type="button" onClick={stopGeneration}>Detener</button></div>}
           {error && <p className="error-message" role="alert">{error}</p>}
           {statusMessage && <p className="status-message" role="status">{statusMessage}</p>}
         </div>
