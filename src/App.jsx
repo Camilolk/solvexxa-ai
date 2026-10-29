@@ -63,7 +63,7 @@ function formatDate(value) {
 }
 
 function renderInline(text, keyPrefix) {
-  const tokens = text.split(/(`[^`]+`|\*\*[^*]+\*\*|\\*[^*]+\\*)/g);
+  const tokens = text.split(/(`[^`]+`|\*\*[^*]+\*\*|\*[^*]+\*)/g);
   return tokens.map((token, index) => {
     const key = `${keyPrefix}-inline-${index}`;
     if (token.startsWith('`') && token.endsWith('`')) {
