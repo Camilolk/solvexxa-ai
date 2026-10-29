@@ -474,12 +474,68 @@ export default function App() {
         {statusMessage && !error && <div className="alert info">{statusMessage}</div>}
 
         <section className="messages">
-          {messages.length === 0 ? (
-            <div className="empty-state">
-              <h3>Empieza una conversación</h3>
-              <p>Pregúntale a Solvexxa AI sobre código, dudas o ideas.</p>
-            </div>
-          ) : (
+          
+{messages.length === 0 ? (
+  <div className="empty-state">
+    <div className="welcome-icon">
+      <span>✦</span>
+    </div>
+
+    <p className="welcome-eyebrow">TU ESPACIO DE IA</p>
+
+    <h3>
+      ¿Qué vamos a crear
+      <span className="gradient-text"> hoy?</span>
+    </h3>
+
+    <p className="welcome-description">
+      Pregunta, programa, aprende y convierte tus ideas en algo extraordinario.
+    </p>
+
+    <div className="suggestion-grid">
+      <button
+        type="button"
+        className="suggestion-card"
+        onClick={() => setDraft('Ayúdame a programar un proyecto en JavaScript desde cero.')}
+      >
+        <span className="suggestion-icon purple">⌘</span>
+        <span className="suggestion-title">Programación</span>
+        <span className="suggestion-description">Crea y mejora tu código</span>
+      </button>
+
+      <button
+        type="button"
+        className="suggestion-card"
+        onClick={() => setDraft('Dame ideas creativas para un proyecto innovador.')}
+      >
+        <span className="suggestion-icon cyan">✧</span>
+        <span className="suggestion-title">Ideas creativas</span>
+        <span className="suggestion-description">Explora nuevas posibilidades</span>
+      </button>
+
+      <button
+        type="button"
+        className="suggestion-card"
+        onClick={() => setDraft('Explícame un tema difícil paso a paso con ejemplos sencillos.')}
+      >
+        <span className="suggestion-icon cyan">◈</span>
+        <span className="suggestion-title">Aprender</span>
+        <span className="suggestion-description">Comprende algo nuevo</span>
+      </button>
+
+      <button
+        type="button"
+        className="suggestion-card"
+        onClick={() => setDraft('Ayúdame a redactar un texto claro y profesional.')}
+      >
+        <span className="suggestion-icon purple">✎</span>
+        <span className="suggestion-title">Escritura</span>
+        <span className="suggestion-description">Organiza tus ideas</span>
+      </button>
+    </div>
+  </div>
+) : (
+
             messages.map((message) => (
               <article key={message.id} className={`message ${message.role}`}>
                 <div className="message-meta">
