@@ -2071,3 +2071,124 @@ textarea:focus {
   .composer-tools-grid > label select { max-width: 82px; }
   .composer-tools > summary span { display: none; }
 }
+
+
+/* ---------- RESPONSIVE CONTROLS: NO CLIPPING + HOVER MARQUEE ---------- */
+.composer-actions,
+.composer-main-actions,
+.composer-tools,
+.composer-tools-grid,
+.composer-main-actions > *,
+.composer-tools-grid > * {
+  box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
+}
+.composer-main-actions {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 190px), 1fr));
+}
+.composer-tools-grid {
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr));
+  align-items: stretch;
+}
+.composer-main-actions > *,
+.composer-tools-grid > * {
+  height: auto;
+  min-height: 48px;
+  overflow: hidden;
+  line-height: 1.25;
+  white-space: normal;
+  text-overflow: clip;
+  padding: 9px 12px;
+}
+.composer-main-actions > label,
+.composer-tools-grid > label {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+}
+.composer-main-actions > label > svg,
+.composer-tools-grid > label > svg,
+.composer-main-actions > button > svg,
+.composer-tools-grid > button > svg {
+  flex: 0 0 17px;
+}
+.composer-tools-grid > button {
+  justify-content: flex-start;
+}
+.composer-tools-grid > button b {
+  flex: 0 0 auto;
+  margin-left: auto;
+}
+.marquee-label {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  text-align: inherit;
+}
+.composer-main-actions > *:focus-visible .marquee-label,
+.composer-tools-grid > *:focus-visible .marquee-label,
+.composer-main-actions > *:hover .marquee-label,
+.composer-tools-grid > *:hover .marquee-label {
+  width: max-content;
+  min-width: 100%;
+  overflow: visible;
+  text-overflow: clip;
+  animation: solvexxa-marquee 5s ease-in-out infinite alternate;
+}
+@keyframes solvexxa-marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(min(0px, calc(100% - 100%))); }
+}
+/* Grid items can grow vertically instead of clipping their contents. */
+.composer-tools-grid > label select {
+  flex: 0 1 48%;
+  width: auto;
+  min-width: 0;
+  max-width: 52%;
+}
+.composer-tools > summary {
+  box-sizing: border-box;
+  min-width: 0;
+  gap: 8px;
+}
+.composer-tools > summary > span {
+  min-width: 0;
+  max-width: 48%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+@media (max-width: 700px) {
+  .composer-main-actions,
+  .composer-tools-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+  .composer-main-actions > *,
+  .composer-tools-grid > * {
+    min-height: 46px;
+    padding-inline: 9px;
+    font-size: 11px;
+  }
+}
+@media (max-width: 380px) {
+  .composer-main-actions,
+  .composer-tools-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .composer-tools > summary > span {
+    display: none;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .composer-main-actions > *:hover .marquee-label,
+  .composer-tools-grid > *:hover .marquee-label,
+  .composer-main-actions > *:focus-visible .marquee-label,
+  .composer-tools-grid > *:focus-visible .marquee-label {
+    animation: none;
+  }
+}
