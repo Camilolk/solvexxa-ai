@@ -150,10 +150,13 @@ function parseMessageContent(content) {
 }
 
 function buildRequestMessages(messages, draft, imagePreviews) {
-  const output = (messages || []).map((message) => ({
+  const sourceMessages = messages || [];
+  const lastImageIndex = sourceMessages.reduce((last, message, index) =>
+    message.images?.length || message.image ? index : last, -1);
+  const output = sourceMessages.map((message, index) => ({
     role: message.role,
     content: message.content,
-    ...(message.images?.length ? { images: message.images } : message.image ? { image: message.image } : {}),
+    ...(index === lastImageIndex && message.images?.length ? { images: message.images } : index === lastImageIndex && message.image ? { image: message.image } : {}),
     ...(message.attachment?.content ? { content: `${message.content}\\n\\n[Contenido del archivo: ${message.attachment.name}]\\n${message.attachment.content}` } : {}),
   }));
 
@@ -600,6 +603,30 @@ export default function App() {
     }
   };
 
+  const compressImage = (file) => new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('No se pudo leer una imagen.'));
+    reader.onload = () => {
+      const image = new Image();
+      image.onerror = () => reject(new Error('Formato de imagen no compatible.'));
+      image.onload = () => {
+        const maxSide = 1440;
+        const scale = Math.min(1, maxSide / Math.max(image.width, image.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext('2d');
+        if (!context) return reject(new Error('No se pudo procesar la imagen.'));
+        context.fillStyle = '#ffffff';
+        context.fillRect(0, 0, canvas.width, canvas.height);
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.78));
+      };
+      image.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
   const handleImagePick = (event) => {
     const files = Array.from(event.target.files || []);
     if (!files.length) return;
@@ -610,20 +637,15 @@ export default function App() {
       return;
     }
 
-    if (files.some((file) => file.size > 5 * 1024 * 1024)) {
-      setError('La imagen es demasiado grande. Máximo 5 MB.');
+    if (files.some((file) => file.size > 10 * 1024 * 1024)) {
+      setError('La imagen original supera el límite de 10 MB.');
       event.target.value = '';
       return;
     }
 
-    Promise.all(files.map((file) => new Promise((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = () => resolve(reader.result);
-      reader.onerror = () => reject(new Error('No se pudo leer una imagen.'));
-      reader.readAsDataURL(file);
-    }))).then((images) => {
+    Promise.all(files.map(compressImage)).then((images) => {
       setImagePreviews((previous) => [...previous, ...images].slice(0, 4));
-      setStatusMessage('Imágenes listas para enviar (máximo 4).');
+      setStatusMessage('Imágenes optimizadas y listas para enviar (máximo 4).');
       setError('');
     }).catch(() => setError('No se pudieron leer las imágenes.'));
     event.target.value = '';
