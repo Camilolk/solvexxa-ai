@@ -1056,7 +1056,9 @@ export default function App() {
             </span>
           </div>
 
-          <div className="toolbar-actions">
+          <details className="topbar-settings">
+            <summary>⚙️ Ajustes</summary>
+            <div className="toolbar-actions">
             <label className="personality-control model-control" title="Modelo de inteligencia artificial">
               <span>Modelo</span>
               <select value={model} onChange={(event) => { setModel(event.target.value); setStatusMessage(`Modelo cambiado a ${models.find((item) => item.id === event.target.value)?.name || event.target.value}.`); }} aria-label="Seleccionar modelo de IA" disabled={isLoading}>
@@ -1097,7 +1099,8 @@ export default function App() {
             >
               Eliminar
             </button>
-          </div>
+            </div>
+          </details>
         </header>
 
         <div className="message-list" aria-live="polite">
@@ -1132,16 +1135,23 @@ export default function App() {
           {fileAttachment && /\.(js|jsx|ts|tsx|py|java|css|html|json|xml|sql|sh|php|go|rs|c|cpp|h)$/i.test(fileAttachment.name) && <button type="button" className="attach-button" onClick={() => { setDeveloperMode(true); setDraft((value) => value.trim() ? value : 'Revisa este archivo de código. Explícame su estructura, detecta errores y vulnerabilidades, y propón correcciones concretas sin reescribirlo completo.'); }}>🔍 Revisar código adjunto</button>}
           <textarea value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Escribe tu mensaje..." aria-label="Escribe tu mensaje" rows={2} disabled={isLoading} />
           <div className="composer-actions">
-            <label className="attach-button">Adjuntar imagen<input type="file" accept="image/*" multiple hidden onChange={handleImagePick} /></label>
-            <button type="button" className={developerMode ? 'primary' : 'attach-button'} onClick={() => setDeveloperMode((value) => !value)} aria-pressed={developerMode} title="Respuestas especializadas en programación">⌨️ Modo programador {developerMode ? 'activado' : 'desactivado'}</button>
-            <button type="button" className={autoSpeak ? 'primary' : 'attach-button'} onClick={() => setAutoSpeak((value) => !value)} aria-pressed={autoSpeak} title="Leer automáticamente las respuestas">🔊 Voz automática {autoSpeak ? 'activada' : 'desactivada'}</button>
-            <button type="button" className="attach-button" onClick={stopSpeaking}>Detener audio</button>
-            <label className="attach-button">Idioma <select value={voiceLanguage} onChange={(event) => { setVoiceLanguage(event.target.value); setVoiceURI(''); if (recognitionRef.current) recognitionRef.current.lang = event.target.value; }}><option value="es-ES">Español</option><option value="en-US">English (US)</option><option value="en-GB">English (UK)</option></select></label>
-            <label className="attach-button">Voz <select value={voiceURI} onChange={(event) => setVoiceURI(event.target.value)}><option value="">Automática</option>{availableVoices.filter((voice) => voice.lang.toLowerCase().startsWith(voiceLanguage.slice(0,2).toLowerCase())).map((voice) => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name}{voice.default ? ' (predeterminada)' : ''}</option>)}</select></label>
-            <label className="attach-button">Velocidad <select value={speechRate} onChange={(event) => setSpeechRate(Number(event.target.value))}><option value={0.8}>Lenta</option><option value={1}>Normal</option><option value={1.2}>Rápida</option><option value={1.4}>Muy rápida</option></select></label>
-            <label className="attach-button">Adjuntar archivo<input type="file" accept=".pdf,.docx,.txt,.md,.csv,.json,.xml,.html,.js,.jsx,.ts,.tsx,.css,.py,.java,.log" hidden onChange={handleDocumentPick} /></label>
-            <button type="button" onClick={toggleVoiceInput}>{isListening ? 'Detener voz' : 'Hablar'}</button>
-            <button type="submit" className="primary" disabled={isLoading || (!draft.trim() && !imagePreviews.length && !fileAttachment)}>Enviar</button>
+            <div className="composer-main-actions">
+              <label className="attach-button">＋ Imagen<input type="file" accept="image/*" multiple hidden onChange={handleImagePick} /></label>
+              <label className="attach-button">📎 Archivo<input type="file" accept=".pdf,.docx,.txt,.md,.csv,.json,.xml,.html,.js,.jsx,.ts,.tsx,.css,.py,.java,.log" hidden onChange={handleDocumentPick} /></label>
+              <button type="button" className={isListening ? 'voice active' : 'voice'} onClick={toggleVoiceInput}>{isListening ? '⏹ Detener' : '🎙 Hablar'}</button>
+              <button type="submit" className="primary send-button" disabled={isLoading || (!draft.trim() && !imagePreviews.length && !fileAttachment)}>{isLoading ? 'Enviando…' : 'Enviar ↗'}</button>
+            </div>
+            <details className="composer-tools">
+              <summary>✨ Herramientas y voz <span>Programador · Lectura · Idioma</span></summary>
+              <div className="composer-tools-grid">
+                <button type="button" className={developerMode ? 'primary' : 'attach-button'} onClick={() => setDeveloperMode((value) => !value)} aria-pressed={developerMode}>⌨️ Modo programador <b>{developerMode ? 'ON' : 'OFF'}</b></button>
+                <button type="button" className={autoSpeak ? 'primary' : 'attach-button'} onClick={() => setAutoSpeak((value) => !value)} aria-pressed={autoSpeak}>🔊 Voz automática <b>{autoSpeak ? 'ON' : 'OFF'}</b></button>
+                <button type="button" className="attach-button" onClick={stopSpeaking}>⏹ Detener audio</button>
+                <label className="attach-button">🌐 Idioma <select value={voiceLanguage} onChange={(event) => { setVoiceLanguage(event.target.value); setVoiceURI(''); if (recognitionRef.current) recognitionRef.current.lang = event.target.value; }}><option value="es-ES">Español</option><option value="en-US">English (US)</option><option value="en-GB">English (UK)</option></select></label>
+                <label className="attach-button">🗣️ Voz <select value={voiceURI} onChange={(event) => setVoiceURI(event.target.value)}><option value="">Automática</option>{availableVoices.filter((voice) => voice.lang.toLowerCase().startsWith(voiceLanguage.slice(0,2).toLowerCase())).map((voice) => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name}{voice.default ? ' (predeterminada)' : ''}</option>)}</select></label>
+                <label className="attach-button">⏩ Velocidad <select value={speechRate} onChange={(event) => setSpeechRate(Number(event.target.value))}><option value={0.8}>Lenta</option><option value={1}>Normal</option><option value={1.2}>Rápida</option><option value={1.4}>Muy rápida</option></select></label>
+              </div>
+            </details>
           </div>
         </form>
       {codeWorkspaceOpen && fileAttachment && (
