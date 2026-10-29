@@ -1,518 +1,152 @@
-* {
-  box-sizing: border-box;
-}
-
-:root {
-  color-scheme: dark;
-  --bg: #090d17;
-  --bg-soft: #111827;
-  --panel: rgba(17, 24, 39, 0.82);
-  --panel-strong: #161f2e;
-  --panel-alt: #0f172a;
-  --text: #e5eefc;
-  --muted: #a7b8d6;
-  --primary: #8b5cf6;
-  --primary-2: #22d3ee;
-  --success: #34d399;
-  --danger: #f87171;
-  --border: rgba(148, 163, 184, 0.18);
-  --shadow: 0 24px 60px rgba(15, 23, 42, 0.35);
-}
-
-:root[data-theme='light'] {
-  color-scheme: light;
-  --bg: #edf3ff;
-  --bg-soft: #f7f9ff;
-  --panel: rgba(255, 255, 255, 0.9);
-  --panel-strong: #ffffff;
-  --panel-alt: #eef4ff;
-  --text: #1a2332;
-  --muted: #53627d;
-  --primary: #7c3aed;
-  --primary-2: #0ea5e9;
-  --success: #10b981;
-  --danger: #ef4444;
-  --border: rgba(15, 23, 42, 0.1);
-  --shadow: 0 18px 40px rgba(59, 130, 246, 0.15);
-}
-
-html, body, #root {
-  margin: 0;
-  min-height: 100%;
-  height: 100%;
-  font-family: Inter, 'Segoe UI', sans-serif;
-  background: radial-gradient(circle at top, rgba(124, 58, 237, 0.18), transparent 25%), var(--bg);
-  color: var(--text);
-}
-
-body {
-  min-height: 100vh;
-}
-
-button, input, textarea, select {
-  font: inherit;
-}
-
-button {
-  border: 1px solid var(--border);
-  background: transparent;
-  color: var(--text);
-  border-radius: 12px;
-  cursor: pointer;
-  transition: 160ms ease;
-}
-
-button:hover {
-  transform: translateY(-1px);
-}
-
-button:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-  transform: none;
-}
-
-.primary {
-  background: linear-gradient(135deg, var(--primary), var(--primary-2));
-  border: none;
-  color: white;
-  font-weight: 700;
-}
-
-.app-shell {
-  display: flex;
-  gap: 16px;
-  min-height: 100vh;
-  padding: 16px;
-}
-
-.sidebar {
-  flex: 0 0 290px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  box-shadow: var(--shadow);
-  padding: 16px;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-}
-
-.sidebar-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  margin-bottom: 18px;
-}
-
-.eyebrow {
-  margin: 0;
-  color: var(--primary-2);
-  font-size: 12px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-}
-
-.sidebar-header h1 {
-  margin: 4px 0 0;
-  font-size: 1.5rem;
-}
-
-.conversation-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-  overflow: auto;
-  padding-right: 6px;
-}
-
-.conversation-item {
-  width: 100%;
-  text-align: left;
-  padding: 12px 14px;
-  border-radius: 14px;
-  background: transparent;
-  border: 1px solid var(--border);
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.conversation-item.selected {
-  background: linear-gradient(135deg, rgba(139, 92, 246, 0.18), rgba(34, 211, 238, 0.12));
-  border-color: rgba(123, 92, 246, 0.5);
-}
-
-.conversation-item span {
-  font-weight: 600;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.conversation-item small {
-  color: var(--muted);
-}
-
-.sidebar-actions {
-  margin-top: auto;
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-}
-
-.sidebar-actions button,
-.file-import-label {
-  flex: 1;
-  min-height: 44px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-  color: var(--text);
-  background: var(--panel-alt);
-}
-
-.chat-panel {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  box-shadow: var(--shadow);
-  overflow: hidden;
-}
-
-.topbar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 18px 20px 14px;
-  border-bottom: 1px solid var(--border);
-}
-
-.topbar-title {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.topbar-title h2 {
-  margin: 0;
-  font-size: 1.1rem;
-}
-
-.topbar-title span {
-  color: var(--muted);
-  font-size: 0.8rem;
-}
-
-.menu-button {
-  display: none;
-}
-
-.toolbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-}
-
-.toolbar-actions button {
-  min-height: 40px;
-  padding: 0 12px;
-}
-
-.danger {
-  color: #ffd5d5;
-  border-color: rgba(248, 113, 113, 0.4);
-}
-
-.model-bar {
-  display: flex;
-  justify-content: flex-end;
-  padding: 14px 20px 0;
-}
-
-.model-bar label {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--muted);
-}
-
-.model-bar select,
-textarea,
-input {
-  background: var(--panel-alt);
-  border: 1px solid var(--border);
-  color: var(--text);
-  border-radius: 12px;
-}
-
-.model-bar select {
-  min-height: 42px;
-  padding: 0 12px;
-}
-
-.messages {
-  flex: 1;
-  padding: 18px 20px 10px;
-  overflow: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 14px;
-}
-
-.empty-state {
-  margin: auto;
-  text-align: center;
-  max-width: 520px;
-  color: var(--muted);
-}
-
-.empty-state h3 {
-  color: var(--text);
-  margin-bottom: 8px;
-}
-
-.message {
-  width: min(100%, 760px);
-  border-radius: 18px;
-  border: 1px solid var(--border);
-  background: rgba(15, 23, 42, 0.28);
-  padding: 14px 14px 12px;
-}
-
-.message.user {
-  margin-left: auto;
-  background: linear-gradient(135deg, rgba(124, 58, 237, 0.24), rgba(34, 211, 238, 0.12));
-}
-
-.message.assistant {
-  margin-right: auto;
-}
-
-.message-meta {
-  display: flex;
-  justify-content: space-between;
-  gap: 10px;
-  color: var(--muted);
-  font-size: 0.78rem;
-  margin-bottom: 8px;
-}
-
-.message-body {
-  white-space: pre-wrap;
-  line-height: 1.55;
-}
-
-.message-body p {
-  margin: 0 0 0.75rem;
-}
-
-.message-body p:last-child {
-  margin-bottom: 0;
-}
-
-.code-block {
-  background: rgba(15, 23, 42, 0.8);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  padding: 12px 42px 12px 14px;
-  position: relative;
-  overflow: auto;
-  margin: 12px 0;
-}
-
-.copy-button {
-  position: absolute;
-  right: 10px;
-  top: 10px;
-  padding: 6px 10px;
-  font-size: 0.76rem;
-}
-
-.message-image {
-  max-width: 240px;
-  border-radius: 16px;
-  margin-bottom: 10px;
-  border: 1px solid var(--border);
-}
-
-.read-button {
-  margin-top: 10px;
-  padding: 8px 10px;
-}
-
-.alert {
-  margin: 0 20px 14px;
-  padding: 10px 12px;
-  border-radius: 12px;
-  font-size: 0.9rem;
-}
-
-.alert.error {
-  background: rgba(248, 113, 113, 0.12);
-  border: 1px solid rgba(248, 113, 113, 0.35);
-  color: #fecaca;
-}
-
-.alert.info {
-  background: rgba(34, 211, 238, 0.09);
-  border: 1px solid rgba(34, 211, 238, 0.3);
-  color: #b7ebff;
-}
-
-.typing-indicator {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  width: max-content;
-  background: rgba(15, 23, 42, 0.35);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 12px 14px;
-}
-
-.typing-indicator span {
-  display: block;
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--primary-2);
-  animation: pulse 1.2s infinite ease-in-out;
-}
-
-.typing-indicator span:nth-child(2) { animation-delay: 0.15s; }
-.typing-indicator span:nth-child(3) { animation-delay: 0.3s; }
-
-@keyframes pulse {
-  0%, 100% { transform: scale(0.8); opacity: 0.5; }
-  50% { transform: scale(1); opacity: 1; }
-}
-
-.composer {
-  padding: 14px 20px 20px;
-  border-top: 1px solid var(--border);
-  background: rgba(15, 23, 42, 0.15);
-}
-
-.image-preview-wrap {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.image-preview-wrap img {
-  width: 80px;
-  height: 80px;
-  object-fit: cover;
-  border-radius: 12px;
-  border: 1px solid var(--border);
-}
-
-.remove-image {
-  padding: 9px 10px;
-}
-
-.composer-row {
-  display: flex;
-  gap: 12px;
-  align-items: end;
-}
-
-textarea {
-  flex: 1;
-  min-height: 56px;
-  max-height: 180px;
-  resize: vertical;
-  padding: 14px 16px;
-}
-
-.composer-actions {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-}
-
-.upload-button,
-.voice,
-.send-button {
-  min-height: 46px;
-  min-width: 46px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 0 14px;
-}
-
-.voice.active {
-  background: rgba(248, 113, 113, 0.12);
-  border-color: rgba(248, 113, 113, 0.5);
-}
-
-.send-button {
-  padding: 0 18px;
-}
-
-@media (max-width: 900px) {
-  .app-shell {
-    padding: 12px;
+const DEFAULT_MODELS = [
+  { id: 'openai/gpt-4o-mini', name: 'GPT-4o mini', vision: false },
+  { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', vision: true },
+  { id: 'google/gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash', vision: true },
+];
+
+const json = (data, status = 200) =>
+  new Response(JSON.stringify(data), {
+    status,
+    headers: {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    },
+  });
+
+function normalizeMessageContent(message) {
+  const content = message?.content ?? '';
+
+  if (typeof content === 'string') {
+    return { role: message.role || 'user', content };
   }
 
-  .sidebar {
-    position: fixed;
-    left: 12px;
-    top: 12px;
-    bottom: 12px;
-    width: min(82vw, 320px);
-    transform: translateX(-120%);
-    z-index: 40;
-    transition: transform 180ms ease;
+  if (Array.isArray(content)) {
+    const text = content
+      .filter((item) => item?.type === 'text')
+      .map((item) => item.text)
+      .join('\n');
+
+    const image = content.find((item) => item?.type === 'image_url')?.image_url?.url;
+    return { role: message.role || 'user', content: text || 'Imagen recibida', ...(image ? { image } : {}) };
   }
 
-  .sidebar.open {
-    transform: translateX(0);
-  }
-
-  .menu-button {
-    display: inline-flex;
-    width: 42px;
-    height: 42px;
-  }
-
-  .topbar {
-    padding: 14px 16px;
-  }
-
-  .toolbar-actions {
-    display: none;
-  }
-
-  .model-bar {
-    padding: 12px 16px 0;
-    justify-content: flex-start;
-  }
-
-  .messages,
-  .composer {
-    padding-left: 16px;
-    padding-right: 16px;
-  }
-
-  .composer-row {
-    flex-direction: column;
-    align-items: stretch;
-  }
-
-  .composer-actions {
-    justify-content: flex-end;
-  }
+  return { role: message.role || 'user', content: String(content || '') };
 }
+
+function ensureMessageFormat(messages) {
+  if (!Array.isArray(messages)) return [];
+  return messages
+    .map((message) => {
+      if (!message || typeof message !== 'object') return null;
+      const normalized = normalizeMessageContent(message);
+      return normalized;
+    })
+    .filter(Boolean);
+}
+
+async function callOpenRouter({ model, messages, temperature, max_tokens }, env) {
+  const apiKey = env.OPENROUTER_API_KEY;
+  if (!apiKey) {
+    throw new Error('Falta OPENROUTER_API_KEY. Configúralo en tus variables secretas del worker.');
+  }
+
+  const payload = {
+    model,
+    messages: ensureMessageFormat(messages).map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+      ...(msg.image ? { image: msg.image } : {}),
+    })),
+    temperature,
+    max_tokens,
+  };
+
+  const response = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+      'HTTP-Referer': env.OPENROUTER_SITE_URL || 'https://example.com',
+      'X-Title': env.OPENROUTER_SITE_NAME || 'Solvexxa AI',
+    },
+    body: JSON.stringify(payload),
+  });
+
+  const data = await response.json();
+
+  if (!response.ok) {
+    const errorMessage = data?.error?.message || 'OpenRouter respondió con un error.';
+    throw new Error(errorMessage);
+  }
+
+  const answer = data?.choices?.[0]?.message?.content;
+  if (typeof answer === 'string') return answer;
+  if (Array.isArray(answer)) {
+    return answer
+      .filter((part) => part?.type === 'text')
+      .map((part) => part.text)
+      .join('\n');
+  }
+
+  return 'No se pudo extraer contenido válido de la respuesta.';
+}
+
+export default {
+  async fetch(request, env) {
+    if (request.method === 'OPTIONS') {
+      return new Response(null, {
+        headers: {
+          'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+        },
+      });
+    }
+
+    const url = new URL(request.url);
+
+    if (request.method === 'GET' && url.pathname === '/api/models') {
+      return json({ models: DEFAULT_MODELS });
+    }
+
+    if (request.method === 'GET' && url.pathname === '/healthz') {
+      return json({ ok: true, service: 'solvexxa-ai-worker' });
+    }
+
+    if (request.method !== 'POST') {
+      return json({ error: 'Método no permitido.' }, 405);
+    }
+
+    if (url.pathname === '/api/chat') {
+      try {
+        const body = await request.json();
+        const messages = Array.isArray(body?.messages) ? body.messages : [];
+        const model = body?.model || env.OPENROUTER_MODEL || 'openai/gpt-4o-mini';
+        const temperature = typeof body?.temperature === 'number' ? body.temperature : 0.7;
+        const max_tokens = typeof body?.max_tokens === 'number' ? body.max_tokens : 1200;
+
+        if (!messages.length) {
+          return json({ error: 'No se recibieron mensajes válidos.' }, 400);
+        }
+
+        if (JSON.stringify(body).length > 500000) {
+          return json({ error: 'La solicitud es demasiado grande.' }, 413);
+        }
+
+        const content = await callOpenRouter({ model, messages, temperature, max_tokens }, env);
+        return json({ content });
+      } catch (error) {
+        return json(
+          {
+            error: error instanceof Error ? error.message : 'Error inesperado al contactar a OpenRouter.',
+          },
+          500,
+        );
+      }
+    }
+
+    return json({ error: 'Ruta no encontrada.' }, 404);
+  },
+};
