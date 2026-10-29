@@ -149,11 +149,11 @@ function parseMessageContent(content) {
   });
 }
 
-function buildRequestMessages(messages, draft, imagePreview) {
+function buildRequestMessages(messages, draft, imagePreviews) {
   const output = (messages || []).map((message) => ({
     role: message.role,
     content: message.content,
-    ...(message.image ? { image: message.image } : {}),
+    ...(message.images?.length ? { images: message.images } : message.image ? { image: message.image } : {}),
     ...(message.attachment?.content ? { content: `${message.content}\\n\\n[Contenido del archivo: ${message.attachment.name}]\\n${message.attachment.content}` } : {}),
   }));
 
@@ -161,7 +161,7 @@ function buildRequestMessages(messages, draft, imagePreview) {
     output.push({
       role: 'user',
       content: draft.trim(),
-      ...(imagePreview ? { image: imagePreview } : {}),
+      ...(imagePreviews?.length ? { images: imagePreviews } : {}),
     });
   }
 
@@ -198,7 +198,7 @@ export default function App() {
   const [models, setModels] = useState(DEFAULT_MODELS);
   const [isLoading, setIsLoading] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [imagePreview, setImagePreview] = useState(null);
+  const [imagePreviews, setImagePreviews] = useState([]);
   const [fileAttachment, setFileAttachment] = useState(null);
   const [personality, setPersonality] = useState(() => window.localStorage.getItem('solvexxa-personality') || 'friendly');
   const [customInstructions, setCustomInstructions] = useState(() => window.localStorage.getItem('solvexxa-custom-instructions') || '');
@@ -377,7 +377,7 @@ export default function App() {
     setConversations((prev) => [convo, ...prev]);
     setActiveId(convo.id);
     setDraft('');
-    setImagePreview(null);
+    setImagePreviews([]);
     setError('');
     setStatusMessage('Nueva conversación creada.');
     setIsMobileMenuOpen(false);
@@ -501,14 +501,15 @@ export default function App() {
   const handleSend = async () => {
     if (!activeConversation || isLoading) return;
     const trimmed = draft.trim();
-    if (!trimmed && !imagePreview && !fileAttachment) return;
+    if (!trimmed && !imagePreviews.length && !fileAttachment) return;
 
     const userMessage = {
       id: createId(),
       role: 'user',
-      content: trimmed || 'Imagen adjunta',
+      content: trimmed || (imagePreviews.length ? 'Imágenes adjuntas' : fileAttachment ? `Archivo adjunto: ${fileAttachment.name}` : ''),
       createdAt: Date.now(),
-      image: imagePreview || null,
+      images: imagePreviews,
+      attachment: fileAttachment ? { name: fileAttachment.name, type: fileAttachment.type, content: fileAttachment.content } : null,
     };
     const nextConversation = {
       ...activeConversation,
@@ -600,32 +601,31 @@ export default function App() {
   };
 
   const handleImagePick = (event) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(event.target.files || []);
+    if (!files.length) return;
 
-    if (!file.type.startsWith('image/')) {
+    if (files.some((file) => !file.type.startsWith('image/'))) {
       setError('Solo se permiten imágenes.');
       event.target.value = '';
       return;
     }
 
-    if (file.size > 5 * 1024 * 1024) {
+    if (files.some((file) => file.size > 5 * 1024 * 1024)) {
       setError('La imagen es demasiado grande. Máximo 5 MB.');
       event.target.value = '';
       return;
     }
 
-    const reader = new FileReader();
-
-    reader.onload = () => {
-      setImagePreview(reader.result);
-      setStatusMessage('Imagen lista para enviar.');
+    Promise.all(files.map((file) => new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('No se pudo leer una imagen.'));
+      reader.readAsDataURL(file);
+    }))).then((images) => {
+      setImagePreviews((previous) => [...previous, ...images].slice(0, 4));
+      setStatusMessage('Imágenes listas para enviar (máximo 4).');
       setError('');
-    };
-
-    reader.onerror = () => setError('No se pudo leer la imagen.');
-
-    reader.readAsDataURL(file);
+    }).catch(() => setError('No se pudieron leer las imágenes.'));
     event.target.value = '';
   };
 
@@ -634,11 +634,11 @@ export default function App() {
     if (!file) return;
     const allowed = /\.(txt|md|csv|json|xml|html|js|jsx|ts|tsx|css|py|java|log)$/i.test(file.name);
     if (!allowed) {
-      setError('Formato no compatible. Puedes adjuntar TXT, MD, CSV, JSON, código o LOG.');
+      setError('Formato no compatible todavía. Por ahora puedes adjuntar TXT, MD, CSV, JSON, código o LOG. PDF y Word requieren extracción de texto.');
       event.target.value = '';
       return;
     }
-    if (file.size > 350 * 1024) {
+    if (file.size > 350 * 1024 && !/\.pdf$/i.test(file.name)) {
       setError('El archivo supera el límite de 350 KB para poder enviarlo de forma segura.');
       event.target.value = '';
       return;
@@ -902,7 +902,7 @@ export default function App() {
           ) : messages.map((message, index) => (
             <article className={`message ${message.role === 'user' ? 'user-message' : 'assistant-message'}`} key={message.id || `${message.role}-${index}`}>
               <div className="message-role">{message.role === 'user' ? 'Tú' : 'Solvexxa AI'}</div>
-              {message.image && <img className="message-image" src={message.image} alt="Imagen adjunta" />}
+              {(message.images || (message.image ? [message.image] : [])).map((image, imageIndex) => <img className="message-image" src={image} alt={`Imagen adjunta ${imageIndex + 1}`} key={imageIndex} />)}
               {message.attachment && <div className="file-attachment-card"><span className="file-attachment-icon">📄</span><span><strong>{message.attachment.name}</strong><small>Archivo adjunto</small></span></div>}
               <div className="message-content">{parseMessageContent(message.content)}</div>
               {message.role === 'assistant' && <button type="button" className="speak-button" onClick={() => speakResponse(message.content)}>Leer en voz alta</button>}
@@ -913,14 +913,14 @@ export default function App() {
           {statusMessage && <p className="status-message" role="status">{statusMessage}</p>}
         </div>
         <form className="composer" onSubmit={(event) => { event.preventDefault(); handleSend(); }}>
-          {imagePreview && <div className="image-preview"><img src={imagePreview} alt="Vista previa del archivo adjunto" /><button type="button" onClick={() => setImagePreview(null)} aria-label="Quitar imagen">×</button></div>}
+          {imagePreviews.length > 0 && <div className="image-preview">{imagePreviews.map((image, index) => <div className="image-preview-item" key={`${index}-${image.slice(0, 24)}`}><img src={image} alt={`Vista previa ${index + 1}`} /><button type="button" onClick={() => setImagePreviews((previous) => previous.filter((_, i) => i !== index))} aria-label={`Quitar imagen ${index + 1}`}>×</button></div>)}</div>}
           {fileAttachment && <div className="file-pending"><span>📄 {fileAttachment.name}</span><button type="button" onClick={() => setFileAttachment(null)} aria-label="Quitar archivo">×</button></div>}
           <textarea value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Escribe tu mensaje..." aria-label="Escribe tu mensaje" rows={2} disabled={isLoading} />
           <div className="composer-actions">
-            <label className="attach-button">Adjuntar imagen<input type="file" accept="image/*" hidden onChange={handleImagePick} /></label>
-            <label className="attach-button">Adjuntar archivo<input type="file" accept=".txt,.md,.csv,.json,.xml,.html,.js,.jsx,.ts,.tsx,.css,.py,.java,.log" hidden onChange={handleDocumentPick} /></label>
+            <label className="attach-button">Adjuntar imagen<input type="file" accept="image/*" multiple hidden onChange={handleImagePick} /></label>
+            <label className="attach-button">Adjuntar archivo<input type="file" accept=".txt,.md,.csv,.json,.xml,.html,.js,.jsx,.ts,.tsx,.css,.py,.java,.log,.pdf,.docx" hidden onChange={handleDocumentPick} /></label>
             <button type="button" onClick={toggleVoiceInput}>{isListening ? 'Detener voz' : 'Hablar'}</button>
-            <button type="submit" className="primary" disabled={isLoading || (!draft.trim() && !imagePreview && !fileAttachment)}>Enviar</button>
+            <button type="submit" className="primary" disabled={isLoading || (!draft.trim() && !imagePreviews.length && !fileAttachment)}>Enviar</button>
           </div>
         </form>
       </main>
