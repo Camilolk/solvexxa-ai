@@ -267,6 +267,25 @@ export default {
 
     const url = new URL(request.url);
 
+    if (request.method === 'GET' && url.pathname === '/api/search') {
+      const query = (url.searchParams.get('q') || '').trim().slice(0, 240);
+      if (query.length < 2) return json({ error: 'Escribe al menos dos caracteres para buscar.' }, 400, corsHeaders);
+      try {
+        const params = new URLSearchParams({ action: 'query', list: 'search', srsearch: query, srlimit: '5', srprop: 'snippet', format: 'json', utf8: '1' });
+        const response = await fetch('https://es.wikipedia.org/w/api.php?' + params, { headers: { 'User-Agent': 'SolvexxaAI/1.0' } });
+        if (!response.ok) throw new Error('El proveedor de búsqueda no respondió.');
+        const data = await response.json();
+        const results = (data?.query?.search || []).slice(0, 5).map((item) => ({
+          title: item.title,
+          extract: (item.snippet || '').replace(/<[^>]*>/g, '').replace(/&quot;/g, '"').replace(/&#039;/g, "'"),
+          url: 'https://es.wikipedia.org/wiki/' + encodeURIComponent(item.title.replace(/ /g, '_')),
+        }));
+        return json({ query, provider: 'Wikipedia', results }, 200, corsHeaders);
+      } catch (error) {
+        return json({ error: error instanceof Error ? error.message : 'Error al buscar.' }, 502, corsHeaders);
+      }
+    }
+
     if (request.method === 'GET' && url.pathname === '/api/models') {
       return json({ models: DEFAULT_MODELS }, 200, corsHeaders);
     }
