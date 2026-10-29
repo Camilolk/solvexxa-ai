@@ -1217,3 +1217,47 @@ textarea:focus {
     padding: 12px;
   }
 }
+
+/* SOLVEXXA AI — FIX MOBILE OVERFLOW */
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  overflow-x: hidden;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+@media (max-width: 700px) {
+  .app,
+  .app-container,
+  .main-layout,
+  .main-content,
+  main,
+  .chat-container {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .messages,
+  .empty-state,
+  .suggestion-grid {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .suggestion-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  input,
+  textarea {
+    max-width: 100%;
+  }
+}
