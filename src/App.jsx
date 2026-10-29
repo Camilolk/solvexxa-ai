@@ -1,3 +1,4 @@
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   getAllConversations,
@@ -8,6 +9,7 @@ import {
 } from './lib/storage';
 
 const DEFAULT_MODEL = 'openai/gpt-4o-mini';
+
 const DEFAULT_MODELS = [
   { id: 'openai/gpt-4o-mini', name: 'GPT-4o mini', vision: false },
   { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', vision: true },
@@ -19,19 +21,27 @@ function createId() {
 }
 
 function createDraftConversation() {
+  const now = Date.now();
+
   return {
     id: createId(),
     title: 'Nueva conversación',
+    titleManuallySet: false,
     model: DEFAULT_MODEL,
-    createdAt: Date.now(),
-    updatedAt: Date.now(),
+    createdAt: now,
+    updatedAt: now,
     messages: [],
   };
 }
 
 function getConversationTitle(messages) {
   const text = (messages || [])
-    .filter((msg) => msg.role === 'user' && typeof msg.content === 'string' && msg.content.trim())
+    .filter(
+      (msg) =>
+        msg.role === 'user' &&
+        typeof msg.content === 'string' &&
+        msg.content.trim(),
+    )
     .map((msg) => msg.content.trim())
     .join(' ')
     .replace(/\s+/g, ' ')
@@ -42,6 +52,7 @@ function getConversationTitle(messages) {
 
 function formatDate(value) {
   const timestamp = Number(value) || Date.now();
+
   return new Date(timestamp).toLocaleString('es-ES', {
     day: '2-digit',
     month: '2-digit',
@@ -64,7 +75,9 @@ function parseMessageContent(content) {
             type="button"
             className="copy-button"
             onClick={() => {
-              if (navigator.clipboard) navigator.clipboard.writeText(part);
+              if (navigator.clipboard) {
+                navigator.clipboard.writeText(part).catch(() => {});
+              }
             }}
           >
             Copiar
@@ -74,6 +87,7 @@ function parseMessageContent(content) {
     }
 
     if (!part) return null;
+
     return <p key={`${index}-text`}>{part}</p>;
   });
 }
@@ -96,8 +110,29 @@ function buildRequestMessages(messages, draft, imagePreview) {
   return output;
 }
 
+function getDateGroup(value) {
+  const date = new Date(Number(value) || Date.now());
+  const now = new Date();
+
+  const dateKey = `${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`;
+  const todayKey = `${now.getFullYear()}-${now.getMonth()}-${now.getDate()}`;
+
+  const yesterday = new Date(now);
+  yesterday.setDate(yesterday.getDate() - 1);
+
+  const yesterdayKey = `${yesterday.getFullYear()}-${yesterday.getMonth()}-${yesterday.getDate()}`;
+
+  if (dateKey === todayKey) return 'Hoy';
+  if (dateKey === yesterdayKey) return 'Ayer';
+
+  return 'Anteriores';
+}
+
 export default function App() {
-  const [theme, setTheme] = useState(() => window.localStorage.getItem('solvexxa-theme') || 'dark');
+  const [theme, setTheme] = useState(
+    () => window.localStorage.getItem('solvexxa-theme') || 'dark',
+  );
+
   const [conversations, setConversations] = useState([]);
   const [activeId, setActiveId] = useState(null);
   const [draft, setDraft] = useState('');
@@ -109,6 +144,8 @@ export default function App() {
   const [statusMessage, setStatusMessage] = useState('');
   const [error, setError] = useState('');
   const [isListening, setIsListening] = useState(false);
+  const [historySearch, setHistorySearch] = useState('');
+
   const recognitionRef = useRef(null);
 
   useEffect(() => {
@@ -117,14 +154,26 @@ export default function App() {
   }, [theme]);
 
   useEffect(() => {
+    let cancelled = false;
+
     const load = async () => {
       try {
         const stored = await getAllConversations();
-        const next = stored && stored.length ? stored : [createDraftConversation()];
-        next.sort((a, b) => (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt));
+        if (cancelled) return;
+
+        const next =
+          stored && stored.length ? stored : [createDraftConversation()];
+
+        next.sort(
+          (a, b) =>
+            (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt),
+        );
+
         setConversations(next);
         setActiveId(next[0]?.id || null);
-      } catch (err) {
+      } catch {
+        if (cancelled) return;
+
         const fallback = [createDraftConversation()];
         setConversations(fallback);
         setActiveId(fallback[0].id);
@@ -132,11 +181,17 @@ export default function App() {
     };
 
     load();
+
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
     if (!activeId || !conversations.length) return;
+
     const active = conversations.find((item) => item.id === activeId);
+
     if (active) {
       saveConversation(active).catch(() => {});
     }
@@ -148,6 +203,7 @@ export default function App() {
     const loadModels = async () => {
       try {
         const response = await fetch('/api/models');
+
         if (!response.ok) {
           throw new Error('No se pudo cargar la lista de modelos.');
         }
@@ -155,12 +211,17 @@ export default function App() {
         const data = await response.json();
         if (cancelled) return;
 
-        const list = Array.isArray(data?.models) && data.models.length ? data.models : DEFAULT_MODELS;
+        const list =
+          Array.isArray(data?.models) && data.models.length
+            ? data.models
+            : DEFAULT_MODELS;
+
         setModels(list);
+
         if (!list.some((option) => option.id === model)) {
           setModel(list[0].id);
         }
-      } catch (err) {
+      } catch {
         if (!cancelled) {
           setModels(DEFAULT_MODELS);
           setStatusMessage('Usando modelos por defecto.');
@@ -169,77 +230,166 @@ export default function App() {
     };
 
     loadModels();
+
     return () => {
       cancelled = true;
     };
   }, []);
 
   const activeConversation = useMemo(
-    () => conversations.find((item) => item.id === activeId) || conversations[0] || null,
+    () =>
+      conversations.find((item) => item.id === activeId) ||
+      conversations[0] ||
+      null,
     [conversations, activeId],
   );
 
+  const filteredConversations = useMemo(() => {
+    const query = historySearch.trim().toLocaleLowerCase('es');
+
+    return [...conversations]
+      .filter((item) =>
+        (item.title || 'Sin título')
+          .toLocaleLowerCase('es')
+          .includes(query),
+      )
+      .sort(
+        (a, b) =>
+          (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt),
+      );
+  }, [conversations, historySearch]);
+
+  const groupedConversations = useMemo(() => {
+    const labels = ['Hoy', 'Ayer', 'Anteriores'];
+    const groups = labels.map((label) => ({ label, items: [] }));
+
+    for (const item of filteredConversations) {
+      const label = getDateGroup(item.updatedAt || item.createdAt);
+      const group = groups.find((entry) => entry.label === label);
+
+      if (group) group.items.push(item);
+    }
+
+    return groups.filter((group) => group.items.length > 0);
+  }, [filteredConversations]);
+
   const syncConversation = (updated) => {
     const previous = conversations.find((item) => item.id === updated.id);
-    const normalizedTitle =
-      typeof updated.title === 'string' && updated.title.trim()
-        ? updated.title.trim()
-        : previous?.title && previous.title.trim()
-          ? previous.title.trim()
-          : getConversationTitle(updated.messages);
+
+    const titleManuallySet =
+      updated.titleManuallySet ?? previous?.titleManuallySet ?? false;
+
+    const automaticTitle = getConversationTitle(updated.messages);
+
+    const normalizedTitle = titleManuallySet
+      ? updated.title?.trim() || 'Nueva conversación'
+      : automaticTitle !== 'Nueva conversación'
+        ? automaticTitle
+        : previous?.title || 'Nueva conversación';
 
     const normalized = {
       ...updated,
       updatedAt: Date.now(),
       title: normalizedTitle,
+      titleManuallySet,
     };
 
     setConversations((prev) => {
       const next = prev.some((item) => item.id === normalized.id)
-        ? prev.map((item) => (item.id === normalized.id ? normalized : item))
+        ? prev.map((item) =>
+            item.id === normalized.id ? normalized : item,
+          )
         : [normalized, ...prev];
 
-      return next.sort((a, b) => (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt));
+      return next.sort(
+        (a, b) =>
+          (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt),
+      );
     });
   };
 
   const createNewConversation = () => {
     const convo = createDraftConversation();
+
     setConversations((prev) => [convo, ...prev]);
     setActiveId(convo.id);
     setDraft('');
     setImagePreview(null);
     setError('');
     setStatusMessage('Nueva conversación creada.');
+    setIsMobileMenuOpen(false);
   };
 
   const renameConversation = () => {
     if (!activeConversation) return;
-    const title = window.prompt('Escribe el nuevo título', activeConversation.title || 'Nueva conversación');
-    if (!title) return;
 
-    const updated = {
+    const title = window.prompt(
+      'Escribe el nuevo título',
+      activeConversation.title || 'Nueva conversación',
+    );
+
+    if (title === null) return;
+
+    const trimmedTitle = title.trim();
+
+    if (!trimmedTitle) {
+      setStatusMessage('El título no puede estar vacío.');
+      return;
+    }
+
+    syncConversation({
       ...activeConversation,
-      title: title.trim() || 'Nueva conversación',
-    };
-    syncConversation(updated);
+      title: trimmedTitle,
+      titleManuallySet: true,
+    });
+
     setStatusMessage('Título actualizado.');
   };
 
   const removeConversation = async () => {
     if (!activeConversation) return;
-    const confirmed = window.confirm('¿Eliminar esta conversación?');
+
+    const deletedId = activeConversation.id;
+    const deletedTitle = activeConversation.title || 'Sin título';
+
+    const confirmed = window.confirm(
+      `¿Eliminar "${deletedTitle}"? Esta acción no se puede deshacer.`,
+    );
+
     if (!confirmed) return;
 
-    const remaining = conversations.filter((item) => item.id !== activeConversation.id);
-    setConversations(remaining);
-    setActiveId(remaining[0]?.id || null);
-    await deleteConversationById(activeConversation.id).catch(() => {});
+    try {
+      await deleteConversationById(deletedId);
+    } catch {
+      setError('No se pudo eliminar la conversación guardada.');
+      return;
+    }
+
+    const remaining = conversations.filter((item) => item.id !== deletedId);
+
+    setError('');
+    setDraft('');
+    setImagePreview(null);
+
+    if (remaining.length === 0) {
+      const freshConversation = createDraftConversation();
+
+      setConversations([freshConversation]);
+      setActiveId(freshConversation.id);
+    } else {
+      setConversations(remaining);
+
+      if (deletedId === activeId) {
+        setActiveId(remaining[0].id);
+      }
+    }
+
     setStatusMessage('Conversación eliminada.');
   };
 
   const exportCurrentConversation = () => {
     if (!activeConversation) return;
+
     exportConversations([activeConversation]);
     setStatusMessage('Conversación exportada.');
   };
@@ -255,10 +405,28 @@ export default function App() {
           return;
         }
 
-        const next = [...items, ...conversations];
-        next.sort((a, b) => (b.updatedAt || b.createdAt) - (a.updatedAt || a.createdAt));
-        setConversations(next);
-        setActiveId(items[0].id);
+        setConversations((previous) => {
+          const existingIds = new Set(previous.map((item) => item.id));
+
+          const uniqueItems = items.filter(
+            (item) => !existingIds.has(item.id),
+          );
+
+          return [...uniqueItems, ...previous].sort(
+            (a, b) =>
+              (b.updatedAt || b.createdAt) -
+              (a.updatedAt || a.createdAt),
+          );
+        });
+
+        const firstImported = items.find(
+          (item) =>
+            !conversations.some((existing) => existing.id === item.id),
+        );
+
+        if (firstImported) setActiveId(firstImported.id);
+
+        setError('');
         setStatusMessage('Historial importado correctamente.');
       })
       .catch(() => setError('El archivo no pudo importarse.'))
@@ -268,8 +436,10 @@ export default function App() {
   };
 
   const handleSend = async () => {
-    if (!activeConversation) return;
+    if (!activeConversation || isLoading) return;
+
     const trimmed = draft.trim();
+
     if (!trimmed && !imagePreview) return;
 
     const userMessage = {
@@ -299,21 +469,28 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: nextConversation.model,
-          messages: buildRequestMessages(nextConversation.messages, '', imagePreview),
+          messages: buildRequestMessages(
+            nextConversation.messages,
+            '',
+            null,
+          ),
           temperature: 0.7,
           max_tokens: 1200,
         }),
       });
 
       let data;
+
       try {
         data = await response.json();
-      } catch (err) {
+      } catch {
         throw new Error('La respuesta del servidor no era JSON válido.');
       }
 
       if (!response.ok) {
-        throw new Error(data?.error || 'No se pudo obtener una respuesta válida.');
+        throw new Error(
+          data?.error || 'No se pudo obtener una respuesta válida.',
+        );
       }
 
       const assistantMessage = {
@@ -327,11 +504,16 @@ export default function App() {
         ...nextConversation,
         messages: [...nextConversation.messages, assistantMessage],
       };
+
       syncConversation(updated);
       setActiveId(updated.id);
       setStatusMessage('Respuesta recibida.');
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Ocurrió un error inesperado.';
+      const message =
+        err instanceof Error
+          ? err.message
+          : 'Ocurrió un error inesperado.';
+
       setError(message);
       setStatusMessage('El mensaje se guardó localmente, pero la IA no respondió.');
     } finally {
@@ -345,40 +527,61 @@ export default function App() {
 
     if (!file.type.startsWith('image/')) {
       setError('Solo se permiten imágenes.');
+      event.target.value = '';
       return;
     }
 
     if (file.size > 5 * 1024 * 1024) {
       setError('La imagen es demasiado grande. Máximo 5 MB.');
+      event.target.value = '';
       return;
     }
 
     const reader = new FileReader();
+
     reader.onload = () => {
       setImagePreview(reader.result);
       setStatusMessage('Imagen lista para enviar.');
+      setError('');
     };
+
+    reader.onerror = () => setError('No se pudo leer la imagen.');
+
     reader.readAsDataURL(file);
     event.target.value = '';
   };
 
   const toggleVoiceInput = () => {
-    if (!('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)) {
+    if (
+      !('SpeechRecognition' in window || 'webkitSpeechRecognition' in window)
+    ) {
       setStatusMessage('La voz no está disponible en este navegador.');
       return;
     }
 
-    const SpeechRecognitionAPI = window.SpeechRecognition || window.webkitSpeechRecognition;
+    const SpeechRecognitionAPI =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+
     if (!recognitionRef.current) {
       recognitionRef.current = new SpeechRecognitionAPI();
       recognitionRef.current.lang = 'es-ES';
       recognitionRef.current.interimResults = false;
+
       recognitionRef.current.onresult = (event) => {
         const transcript = Array.from(event.results)
           .map((result) => result[0].transcript)
           .join(' ');
-        setDraft((previous) => `${previous}${previous ? ' ' : ''}${transcript}`.trim());
+
+        setDraft((previous) =>
+          `${previous}${previous ? ' ' : ''}${transcript}`.trim(),
+        );
       };
+
+      recognitionRef.current.onerror = () => {
+        setIsListening(false);
+        setStatusMessage('No se pudo reconocer la voz.');
+      };
+
       recognitionRef.current.onend = () => setIsListening(false);
     }
 
@@ -388,14 +591,21 @@ export default function App() {
       return;
     }
 
-    recognitionRef.current.start();
-    setIsListening(true);
+    try {
+      recognitionRef.current.start();
+      setIsListening(true);
+    } catch {
+      setIsListening(false);
+      setStatusMessage('No se pudo iniciar el reconocimiento de voz.');
+    }
   };
 
   const speakResponse = (text) => {
     if (!('speechSynthesis' in window) || !text) return;
+
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.lang = 'es-ES';
+
     window.speechSynthesis.cancel();
     window.speechSynthesis.speak(utterance);
   };
@@ -410,199 +620,138 @@ export default function App() {
             <p className="eyebrow">Solvexxa AI</p>
             <h1>Chats</h1>
           </div>
-          <button type="button" className="primary" onClick={createNewConversation}>Nuevo</button>
+
+          <button
+            type="button"
+            className="primary"
+            onClick={createNewConversation}
+          >
+            Nuevo
+          </button>
+        </div>
+
+        <div className="history-search">
+          <input
+            type="search"
+            value={historySearch}
+            onChange={(event) => setHistorySearch(event.target.value)}
+            placeholder="Buscar conversaciones..."
+            aria-label="Buscar conversaciones"
+          />
         </div>
 
         <div className="conversation-list">
-          {conversations.map((item) => (
-            <button
-              type="button"
-              key={item.id}
-              className={`conversation-item ${item.id === activeId ? 'selected' : ''}`}
-              onClick={() => {
-                setActiveId(item.id);
-                setIsMobileMenuOpen(false);
-              }}
-            >
-              <span>{item.title || 'Sin título'}</span>
-              <small>{formatDate(item.updatedAt || item.createdAt)}</small>
-            </button>
+          {groupedConversations.map((group) => (
+            <div className="conversation-group" key={group.label}>
+              <h3 className="conversation-group-title">{group.label}</h3>
+
+              {group.items.map((item) => (
+                <button
+                  type="button"
+                  key={item.id}
+                  className={`conversation-item ${
+                    item.id === activeId ? 'selected' : ''
+                  }`}
+                  onClick={() => {
+                    setActiveId(item.id);
+                    setIsMobileMenuOpen(false);
+                    setError('');
+                    setStatusMessage('');
+                  }}
+                >
+                  <span>{item.title || 'Sin título'}</span>
+                  <small>
+                    {formatDate(item.updatedAt || item.createdAt)}
+                  </small>
+                </button>
+              ))}
+            </div>
           ))}
+
+          {filteredConversations.length === 0 && (
+            <p className="history-empty">
+              {historySearch.trim()
+                ? 'No se encontraron conversaciones.'
+                : 'Tu historial aparecerá aquí.'}
+            </p>
+          )}
         </div>
 
         <div className="sidebar-actions">
-          <button type="button" onClick={() => setTheme((previous) => (previous === 'dark' ? 'light' : 'dark'))}>
+          <button
+            type="button"
+            onClick={() =>
+              setTheme((previous) =>
+                previous === 'dark' ? 'light' : 'dark',
+              )
+            }
+          >
             {theme === 'dark' ? 'Modo claro' : 'Modo oscuro'}
           </button>
+
           <label className="file-import-label">
             Importar
-            <input type="file" accept="application/json" onChange={handleFileImport} hidden />
+            <input
+              type="file"
+              accept="application/json"
+              onChange={handleFileImport}
+              hidden
+            />
           </label>
         </div>
       </aside>
 
       <main className="chat-panel">
         <header className="topbar">
-          <button type="button" className="menu-button" onClick={() => setIsMobileMenuOpen((previous) => !previous)}>
+          <button
+            type="button"
+            className="menu-button"
+            onClick={() =>
+              setIsMobileMenuOpen((previous) => !previous)
+            }
+            aria-label="Abrir historial"
+          >
             ☰
           </button>
 
           <div className="topbar-title">
             <h2>{activeConversation?.title || 'Nueva conversación'}</h2>
-            <span>{activeConversation ? formatDate(activeConversation.updatedAt || activeConversation.createdAt) : ''}</span>
+            <span>
+              {activeConversation
+                ? formatDate(
+                    activeConversation.updatedAt ||
+                      activeConversation.createdAt,
+                  )
+                : ''}
+            </span>
           </div>
 
           <div className="toolbar-actions">
-            <button type="button" onClick={renameConversation}>Renombrar</button>
-            <button type="button" onClick={exportCurrentConversation}>Exportar</button>
-            <button type="button" className="danger" onClick={removeConversation}>Eliminar</button>
+            <button
+              type="button"
+              onClick={renameConversation}
+              disabled={!activeConversation}
+            >
+              Renombrar
+            </button>
+
+            <button
+              type="button"
+              onClick={exportCurrentConversation}
+              disabled={!activeConversation}
+            >
+              Exportar
+            </button>
+
+            <button
+              type="button"
+              className="danger"
+              onClick={removeConversation}
+              disabled={!activeConversation}
+            >
+              Eliminar
+            </button>
           </div>
         </header>
 
-        <div className="model-bar">
-          <label>
-            Modelo
-            <select value={model} onChange={(event) => setModel(event.target.value)}>
-              {models.map((option) => (
-                <option key={option.id} value={option.id}>{option.name || option.id}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-
-        {error && <div className="alert error">{error}</div>}
-        {statusMessage && !error && <div className="alert info">{statusMessage}</div>}
-
-        <section className="messages">
-          
-{messages.length === 0 ? (
-  <div className="empty-state">
-    <div className="welcome-icon">
-      <span>✦</span>
-    </div>
-
-    <p className="welcome-eyebrow">TU ESPACIO DE IA</p>
-
-    <h3>
-      ¿Qué vamos a crear
-      <span className="gradient-text"> hoy?</span>
-    </h3>
-
-    <p className="welcome-description">
-      Pregunta, programa, aprende y convierte tus ideas en algo extraordinario.
-    </p>
-
-    <div className="suggestion-grid">
-      <button
-        type="button"
-        className="suggestion-card"
-        onClick={() => setDraft('Ayúdame a programar un proyecto en JavaScript desde cero.')}
-      >
-        <span className="suggestion-icon purple">⌘</span>
-        <span className="suggestion-title">Programación</span>
-        <span className="suggestion-description">Crea y mejora tu código</span>
-      </button>
-
-      <button
-        type="button"
-        className="suggestion-card"
-        onClick={() => setDraft('Dame ideas creativas para un proyecto innovador.')}
-      >
-        <span className="suggestion-icon cyan">✧</span>
-        <span className="suggestion-title">Ideas creativas</span>
-        <span className="suggestion-description">Explora nuevas posibilidades</span>
-      </button>
-
-      <button
-        type="button"
-        className="suggestion-card"
-        onClick={() => setDraft('Explícame un tema difícil paso a paso con ejemplos sencillos.')}
-      >
-        <span className="suggestion-icon cyan">◈</span>
-        <span className="suggestion-title">Aprender</span>
-        <span className="suggestion-description">Comprende algo nuevo</span>
-      </button>
-
-      <button
-        type="button"
-        className="suggestion-card"
-        onClick={() => setDraft('Ayúdame a redactar un texto claro y profesional.')}
-      >
-        <span className="suggestion-icon purple">✎</span>
-        <span className="suggestion-title">Escritura</span>
-        <span className="suggestion-description">Organiza tus ideas</span>
-      </button>
-    </div>
-  </div>
-) : (
-
-            messages.map((message) => (
-              <article key={message.id} className={`message ${message.role}`}>
-                <div className="message-meta">
-                  <strong>{message.role === 'user' ? 'Tú' : 'Solvexxa'}</strong>
-                  <span>{formatDate(message.createdAt)}</span>
-                </div>
-
-                {message.image && (
-                  <img className="message-image" src={message.image} alt="Adjunto del usuario" />
-                )}
-
-                <div className="message-body">{parseMessageContent(message.content)}</div>
-                {message.role === 'assistant' && (
-                  <button type="button" className="read-button" onClick={() => speakResponse(message.content)}>
-                    Leer voz
-                  </button>
-                )}
-              </article>
-            ))
-          )}
-
-          {isLoading && (
-            <div className="typing-indicator">
-              <span />
-              <span />
-              <span />
-            </div>
-          )}
-        </section>
-
-        <div className="composer">
-          {imagePreview && (
-            <div className="image-preview-wrap">
-              <img src={imagePreview} alt="Vista previa" />
-              <button type="button" className="remove-image" onClick={() => setImagePreview(null)}>Eliminar</button>
-            </div>
-          )}
-
-          <div className="composer-row">
-            <textarea
-              rows={3}
-              value={draft}
-              placeholder="Escribe tu mensaje..."
-              onChange={(event) => setDraft(event.target.value)}
-              onKeyDown={(event) => {
-                if (event.key === 'Enter' && !event.shiftKey) {
-                  event.preventDefault();
-                  handleSend();
-                }
-              }}
-            />
-
-            <div className="composer-actions">
-              <label className="upload-button">
-                🖼️
-                <input type="file" accept="image/*" onChange={handleImagePick} hidden />
-              </label>
-              <button type="button" className={isListening ? 'voice active' : 'voice'} onClick={toggleVoiceInput}>
-                {isListening ? 'Detener' : '🎙️'}
-              </button>
-              <button type="button" className="primary send-button" onClick={handleSend} disabled={isLoading || (!draft.trim() && !imagePreview)}>
-                Enviar
-              </button>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
-  );
-}
+        <div className="
