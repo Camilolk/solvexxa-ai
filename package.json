@@ -1,0 +1,22 @@
+{
+  "name": "solvexxa-ai",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "worker:dev": "wrangler dev worker/index.js --local --port 8787",
+    "deploy": "wrangler deploy worker/index.js"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.10",
+    "wrangler": "^3.23.0"
+  }
+}
