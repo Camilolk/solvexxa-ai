@@ -1133,13 +1133,15 @@ export default function App() {
           {fileAttachment && <div className="file-pending"><span>📄 {fileAttachment.name}</span><button type="button" onClick={() => setFileAttachment(null)} aria-label="Quitar archivo">×</button></div>}
           {fileAttachment && /\.(js|jsx|ts|tsx|py|java|css|html|json|xml|sql|sh|php|go|rs|c|cpp|h)$/i.test(fileAttachment.name) && <button type="button" className="attach-button" onClick={() => { setWorkspaceCode(fileAttachment.content); setCodeWorkspaceOpen(true); }}>🧪 Abrir espacio de código</button>}
           {fileAttachment && /\.(js|jsx|ts|tsx|py|java|css|html|json|xml|sql|sh|php|go|rs|c|cpp|h)$/i.test(fileAttachment.name) && <button type="button" className="attach-button" onClick={() => { setDeveloperMode(true); setDraft((value) => value.trim() ? value : 'Revisa este archivo de código. Explícame su estructura, detecta errores y vulnerabilidades, y propón correcciones concretas sin reescribirlo completo.'); }}>🔍 Revisar código adjunto</button>}
-          <textarea value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Escribe tu mensaje..." aria-label="Escribe tu mensaje" rows={2} disabled={isLoading} />
+          <div className="composer-input-wrap">
+            <textarea value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Escribe tu mensaje..." aria-label="Escribe tu mensaje" rows={2} disabled={isLoading} />
+            <button type="submit" className="primary send-button composer-send-button" aria-label="Enviar mensaje" disabled={isLoading || (!draft.trim() && !imagePreviews.length && !fileAttachment)}>{isLoading ? '…' : '↗'}</button>
+          </div>
           <div className="composer-actions">
             <div className="composer-main-actions">
               <label className="attach-button">＋ Imagen<input type="file" accept="image/*" multiple hidden onChange={handleImagePick} /></label>
               <label className="attach-button">📎 Archivo<input type="file" accept=".pdf,.docx,.txt,.md,.csv,.json,.xml,.html,.js,.jsx,.ts,.tsx,.css,.py,.java,.log" hidden onChange={handleDocumentPick} /></label>
               <button type="button" className={isListening ? 'voice active' : 'voice'} onClick={toggleVoiceInput}>{isListening ? '⏹ Detener' : '🎙 Hablar'}</button>
-              <button type="submit" className="primary send-button" disabled={isLoading || (!draft.trim() && !imagePreviews.length && !fileAttachment)}>{isLoading ? 'Enviando…' : 'Enviar ↗'}</button>
             </div>
             <details className="composer-tools">
               <summary>✨ Herramientas y voz <span>Programador · Lectura · Idioma</span></summary>
