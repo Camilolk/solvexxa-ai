@@ -754,4 +754,40 @@ export default function App() {
           </div>
         </header>
 
-        <div className="
+        <div className="message-list" aria-live="polite">
+          {messages.length === 0 ? (
+            <section className="welcome-screen">
+              <p className="eyebrow">Tu asistente inteligente</p>
+              <h1>¿En qué puedo ayudarte hoy?</h1>
+              <p>Pregunta, explora ideas o trabaja en un proyecto.</p>
+              <div className="suggestion-grid">
+                {['Ayúdame a programar algo','Explícame un tema difícil','Dame ideas para un proyecto','Ayúdame a resolver un problema'].map((suggestion) => (
+                  <button type="button" className="suggestion-card" key={suggestion} onClick={() => setDraft(suggestion)}>{suggestion}</button>
+                ))}
+              </div>
+            </section>
+          ) : messages.map((message, index) => (
+            <article className={`message ${message.role === 'user' ? 'user-message' : 'assistant-message'}`} key={message.id || `${message.role}-${index}`}>
+              <div className="message-role">{message.role === 'user' ? 'Tú' : 'Solvexxa AI'}</div>
+              {message.image && <img className="message-image" src={message.image} alt="Imagen adjunta" />}
+              <div className="message-content">{parseMessageContent(message.content)}</div>
+              {message.role === 'assistant' && <button type="button" className="speak-button" onClick={() => speakResponse(message.content)}>Leer en voz alta</button>}
+            </article>
+          ))}
+          {isLoading && <div className="loading-indicator">Solvexxa está pensando...</div>}
+          {error && <p className="error-message" role="alert">{error}</p>}
+          {statusMessage && <p className="status-message" role="status">{statusMessage}</p>}
+        </div>
+        <form className="composer" onSubmit={handleSubmit}>
+          {imagePreview && <div className="image-preview"><img src={imagePreview} alt="Vista previa del archivo adjunto" /><button type="button" onClick={() => setImagePreview(null)} aria-label="Quitar imagen">×</button></div>}
+          <textarea value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Escribe tu mensaje..." aria-label="Escribe tu mensaje" rows={2} disabled={isLoading} />
+          <div className="composer-actions">
+            <label className="attach-button">Adjuntar imagen<input type="file" accept="image/*" hidden onChange={handleImageSelect} /></label>
+            <button type="button" onClick={toggleVoiceInput}>{isListening ? 'Detener voz' : 'Hablar'}</button>
+            <button type="submit" className="primary" disabled={isLoading || (!draft.trim() && !imagePreview)}>Enviar</button>
+          </div>
+        </form>
+      </main>
+    </div>
+  );
+}
