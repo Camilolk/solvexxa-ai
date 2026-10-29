@@ -310,6 +310,25 @@ export default function App() {
   const recognitionRef = useRef(null);
   const menuTouchStartX = useRef(null);
   const abortControllerRef = useRef(null);
+  const settingsDetailsRef = useRef(null);
+
+  useEffect(() => {
+    const closeSettingsOnOutsideInteraction = (event) => {
+      const details = settingsDetailsRef.current;
+      if (details?.open && !details.contains(event.target)) details.open = false;
+    };
+    const closeSettingsOnEscape = (event) => {
+      if (event.key === 'Escape' && settingsDetailsRef.current?.open) {
+        settingsDetailsRef.current.open = false;
+      }
+    };
+    document.addEventListener('pointerdown', closeSettingsOnOutsideInteraction);
+    document.addEventListener('keydown', closeSettingsOnEscape);
+    return () => {
+      document.removeEventListener('pointerdown', closeSettingsOnOutsideInteraction);
+      document.removeEventListener('keydown', closeSettingsOnEscape);
+    };
+  }, []);
 
   useEffect(() => {
     window.localStorage.setItem('solvexxa-voice-language', voiceLanguage);
@@ -1073,7 +1092,7 @@ export default function App() {
             </span>
           </div>
 
-          <details className="topbar-settings">
+          <details className="topbar-settings" ref={settingsDetailsRef}>
             <summary>⚙️ Ajustes</summary>
             <div className="toolbar-actions">
             <label className="personality-control model-control" title="Modelo de inteligencia artificial">
