@@ -852,6 +852,12 @@ export default function App() {
           </div>
 
           <div className="toolbar-actions">
+            <label className="personality-control model-control" title="Modelo de inteligencia artificial">
+              <span>Modelo</span>
+              <select value={model} onChange={(event) => { setModel(event.target.value); setStatusMessage(`Modelo cambiado a ${models.find((item) => item.id === event.target.value)?.name || event.target.value}.`); }} aria-label="Seleccionar modelo de IA" disabled={isLoading}>
+                {models.map((option) => <option value={option.id} key={option.id}>{option.name}</option>)}
+              </select>
+            </label>
             <label className="personality-control" title="Personalidad de Solvexxa">
               <span>Personalidad</span>
               <select value={personality} onChange={(event) => setPersonality(event.target.value)} aria-label="Personalidad de Solvexxa">
