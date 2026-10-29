@@ -1156,19 +1156,19 @@ export default function App() {
           </div>
           <div className="composer-actions">
             <div className="composer-main-actions">
-              <label className="attach-button"><UiIcon name="image" /> Imagen<input type="file" accept="image/*" multiple hidden onChange={handleImagePick} /></label>
-              <label className="attach-button"><UiIcon name="file" /> Archivo<input type="file" accept=".pdf,.docx,.txt,.md,.csv,.json,.xml,.html,.js,.jsx,.ts,.tsx,.css,.py,.java,.log" hidden onChange={handleDocumentPick} /></label>
-              <button type="button" className={isListening ? 'voice active' : 'voice'} onClick={toggleVoiceInput}>{isListening ? <><UiIcon name="stop" /> Detener</> : <><UiIcon name="mic" /> Hablar</>}</button>
+              <label className="attach-button"><UiIcon name="image" /><span className="marquee-label">Imagen</span><input type="file" accept="image/*" multiple hidden onChange={handleImagePick} /></label>
+              <label className="attach-button"><UiIcon name="file" /><span className="marquee-label">Archivo</span><input type="file" accept=".pdf,.docx,.txt,.md,.csv,.json,.xml,.html,.js,.jsx,.ts,.tsx,.css,.py,.java,.log" hidden onChange={handleDocumentPick} /></label>
+              <button type="button" className={isListening ? 'voice active' : 'voice'} onClick={toggleVoiceInput}>{isListening ? <><UiIcon name="stop" /><span className="marquee-label">Detener</span></> : <><UiIcon name="mic" /><span className="marquee-label">Hablar</span></>}</button>
             </div>
             <details className="composer-tools">
               <summary>✨ Herramientas y voz <span>Programador · Lectura · Idioma</span></summary>
               <div className="composer-tools-grid">
-                <button type="button" className={developerMode ? 'primary' : 'attach-button'} onClick={() => setDeveloperMode((value) => !value)} aria-pressed={developerMode}><UiIcon name="code" /> Modo programador <b>{developerMode ? 'ON' : 'OFF'}</b></button>
-                <button type="button" className={autoSpeak ? 'primary' : 'attach-button'} onClick={() => setAutoSpeak((value) => !value)} aria-pressed={autoSpeak}><UiIcon name="sound" /> Voz automática <b>{autoSpeak ? 'ON' : 'OFF'}</b></button>
-                <button type="button" className="attach-button" onClick={stopSpeaking}><UiIcon name="stop" /> Detener audio</button>
-                <label className="attach-button"><UiIcon name="globe" /> Idioma <select value={voiceLanguage} onChange={(event) => { setVoiceLanguage(event.target.value); setVoiceURI(''); if (recognitionRef.current) recognitionRef.current.lang = event.target.value; }}><option value="es-ES">Español</option><option value="en-US">English (US)</option><option value="en-GB">English (UK)</option></select></label>
-                <label className="attach-button"><UiIcon name="voice" /> Voz <select value={voiceURI} onChange={(event) => setVoiceURI(event.target.value)}><option value="">Automática</option>{availableVoices.filter((voice) => voice.lang.toLowerCase().startsWith(voiceLanguage.slice(0,2).toLowerCase())).map((voice) => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name}{voice.default ? ' (predeterminada)' : ''}</option>)}</select></label>
-                <label className="attach-button"><UiIcon name="speed" /> Velocidad <select value={speechRate} onChange={(event) => setSpeechRate(Number(event.target.value))}><option value={0.8}>Lenta</option><option value={1}>Normal</option><option value={1.2}>Rápida</option><option value={1.4}>Muy rápida</option></select></label>
+                <button type="button" className={developerMode ? 'primary' : 'attach-button'} onClick={() => setDeveloperMode((value) => !value)} aria-pressed={developerMode}><UiIcon name="code" /><span className="marquee-label">Modo programador</span> <b>{developerMode ? 'ON' : 'OFF'}</b></button>
+                <button type="button" className={autoSpeak ? 'primary' : 'attach-button'} onClick={() => setAutoSpeak((value) => !value)} aria-pressed={autoSpeak}><UiIcon name="sound" /><span className="marquee-label">Voz automática</span> <b>{autoSpeak ? 'ON' : 'OFF'}</b></button>
+                <button type="button" className="attach-button" onClick={stopSpeaking}><UiIcon name="stop" /><span className="marquee-label">Detener audio</span></button>
+                <label className="attach-button"><UiIcon name="globe" /><span className="marquee-label">Idioma</span><select value={voiceLanguage} onChange={(event) => { setVoiceLanguage(event.target.value); setVoiceURI(''); if (recognitionRef.current) recognitionRef.current.lang = event.target.value; }}><option value="es-ES">Español</option><option value="en-US">English (US)</option><option value="en-GB">English (UK)</option></select></label>
+                <label className="attach-button"><UiIcon name="voice" /><span className="marquee-label">Voz</span><select value={voiceURI} onChange={(event) => setVoiceURI(event.target.value)}><option value="">Automática</option>{availableVoices.filter((voice) => voice.lang.toLowerCase().startsWith(voiceLanguage.slice(0,2).toLowerCase())).map((voice) => <option key={voice.voiceURI} value={voice.voiceURI}>{voice.name}{voice.default ? ' (predeterminada)' : ''}</option>)}</select></label>
+                <label className="attach-button"><UiIcon name="speed" /><span className="marquee-label">Velocidad</span><select value={speechRate} onChange={(event) => setSpeechRate(Number(event.target.value))}><option value={0.8}>Lenta</option><option value={1}>Normal</option><option value={1.2}>Rápida</option><option value={1.4}>Muy rápida</option></select></label>
               </div>
             </details>
           </div>
