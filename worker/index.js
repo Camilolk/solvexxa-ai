@@ -291,7 +291,7 @@ export default {
           return json({ error: 'No se recibieron mensajes válidos.' }, 400, corsHeaders);
         }
 
-        if (JSON.stringify(body).length > 500000) {
+        if (JSON.stringify(body).length > 4000000) {
           return json({ error: 'La solicitud es demasiado grande.' }, 413, corsHeaders);
         }
 
