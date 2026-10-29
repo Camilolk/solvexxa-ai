@@ -243,6 +243,20 @@ function getDateGroup(value) {
   return 'Anteriores';
 }
 
+function buildCodeDiff(original, edited) {
+  const before = original.replace(/\r\n/g, '\n').split('\n');
+  const after = edited.replace(/\r\n/g, '\n').split('\n');
+  const rows = [];
+  const total = Math.max(before.length, after.length);
+  for (let index = 0; index < total; index += 1) {
+    const oldLine = before[index];
+    const newLine = after[index];
+    const type = oldLine === undefined ? 'added' : newLine === undefined ? 'removed' : oldLine === newLine ? 'same' : 'changed';
+    rows.push({ number: index + 1, oldLine, newLine, type });
+  }
+  return rows;
+}
+
 export default function App() {
   const [theme, setTheme] = useState(
     () => window.localStorage.getItem('solvexxa-theme') || 'dark',
@@ -259,6 +273,7 @@ export default function App() {
   const [fileAttachment, setFileAttachment] = useState(null);
   const [codeWorkspaceOpen, setCodeWorkspaceOpen] = useState(false);
   const [workspaceCode, setWorkspaceCode] = useState('');
+  const [showCodeDiff, setShowCodeDiff] = useState(false);
   const [personality, setPersonality] = useState(() => window.localStorage.getItem('solvexxa-personality') || 'friendly');
   const [customInstructions, setCustomInstructions] = useState(() => window.localStorage.getItem('solvexxa-custom-instructions') || '');
   const [memoryEnabled, setMemoryEnabled] = useState(() => window.localStorage.getItem('solvexxa-memory-enabled') === 'true');
@@ -1134,10 +1149,23 @@ export default function App() {
           <section className="settings-modal code-workspace" role="dialog" aria-modal="true" aria-labelledby="code-workspace-title">
             <div className="modal-header"><h2 id="code-workspace-title">🧪 Espacio de código</h2><button type="button" onClick={() => setCodeWorkspaceOpen(false)} aria-label="Cerrar">×</button></div>
             <p>Trabaja sobre una copia. El archivo adjunto original no se modifica.</p>
+            <div className="workspace-toolbar">
+              <button type="button" className="attach-button" onClick={() => setShowCodeDiff((value) => !value)}>{showCodeDiff ? '← Volver al editor' : '⇄ Comparar cambios'}</button>
+              <span>{buildCodeDiff(fileAttachment.content, workspaceCode).filter((row) => row.type !== 'same').length} líneas diferentes</span>
+            </div>
+            {showCodeDiff ? (
+              <div className="code-diff" aria-label="Comparación de código">
+                {buildCodeDiff(fileAttachment.content, workspaceCode).map((row) => <div className={'code-diff-row ' + row.type} key={row.number}>
+                  <span className="code-diff-number">{row.number}</span>
+                  <code>{row.type === 'removed' ? '− ' + row.oldLine : row.type === 'added' ? '+ ' + row.newLine : row.type === 'changed' ? '− ' + row.oldLine + '\n+ ' + row.newLine : '  ' + row.oldLine}</code>
+                </div>)}
+              </div>
+            ) : (
             <div className="workspace-columns">
               <label>Original · {fileAttachment.name}<textarea value={fileAttachment.content} readOnly spellCheck="false" /></label>
               <label>Versión de trabajo<textarea value={workspaceCode} onChange={(event) => setWorkspaceCode(event.target.value)} spellCheck="false" /></label>
             </div>
+            )}
             <div className="modal-actions">
               <button type="button" className="attach-button" onClick={() => setWorkspaceCode(fileAttachment.content)}>Restaurar original</button>
               <button type="button" className="attach-button" onClick={() => { if (navigator.clipboard) navigator.clipboard.writeText(workspaceCode).then(() => setStatusMessage('Código de trabajo copiado.')).catch(() => setError('No se pudo copiar el código.')); }}>Copiar versión de trabajo</button>
