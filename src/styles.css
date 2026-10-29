@@ -1103,3 +1103,48 @@ textarea:focus {
   }
   }
   
+.history-search {
+  padding: 12px 14px 4px;
+}
+
+.history-search input {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 11px 12px;
+  border: 1px solid var(--border, rgba(148, 163, 184, 0.2));
+  border-radius: 12px;
+  background: var(--surface, rgba(148, 163, 184, 0.06));
+  color: inherit;
+  font: inherit;
+  outline: none;
+}
+
+.history-search input:focus {
+  border-color: #9b87f5;
+}
+
+.conversation-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+
+.conversation-group-title {
+  margin: 8px 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  opacity: 0.65;
+}
+
+.history-empty {
+  padding: 16px;
+  text-align: center;
+  font-size: 0.88rem;
+  opacity: 0.65;
+}
+
+.conversation-item > span {
+  overflow-wrap: anywhere;
+}
