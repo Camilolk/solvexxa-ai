@@ -1,5 +1,5 @@
 const DEFAULT_MODELS = [
-  { id: 'openai/gpt-4o-mini', name: 'GPT-4o mini', vision: false },
+  { id: 'openai/gpt-4o-mini', name: 'GPT-4o mini', vision: true },
   { id: 'anthropic/claude-3.5-sonnet', name: 'Claude 3.5 Sonnet', vision: true },
   { id: 'google/gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash', vision: true },
 ];
