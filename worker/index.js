@@ -43,10 +43,11 @@ function getCorsHeaders(origin, env) {
 function buildOpenRouterContent(message) {
   const text = typeof message?.content === 'string' ? message.content : '';
 
-  if (message?.image) {
+  if (message?.images?.length || message?.image) {
+    const images = message.images?.length ? message.images : [message.image];
     return [
       { type: 'text', text: text || 'Imagen adjunta' },
-      { type: 'image_url', image_url: { url: message.image } },
+      ...images.map((url) => ({ type: 'image_url', image_url: { url } })),
     ];
   }
 
@@ -87,7 +88,8 @@ function normalizeMessageContent(message) {
       .join('\n');
 
     const image = content.find((item) => item?.type === 'image_url')?.image_url?.url;
-    return { role: message.role || 'user', content: text || 'Imagen recibida', ...(image ? { image } : {}) };
+    const images = content.filter((item) => item?.type === 'image_url').map((item) => item.image_url?.url).filter(Boolean);
+    return { role: message.role || 'user', content: text || 'Imagen recibida', ...(images.length ? { images } : image ? { image } : {}) };
   }
 
   return { role: message.role || 'user', content: String(content || '') };
@@ -121,7 +123,7 @@ async function callOpenRouter({ model, messages, temperature, max_tokens }, env)
     model,
     messages: ensureMessageFormat(messages).map((message) => ({
       role: message.role,
-      content: message.image ? buildOpenRouterContent(message) : message.content,
+      content: (message.image || message.images?.length) ? buildOpenRouterContent(message) : message.content,
     })),
     temperature,
     max_tokens,
