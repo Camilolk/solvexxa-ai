@@ -78,7 +78,7 @@ function normalizeMessageContent(message) {
   const content = message.content ?? '';
 
   if (typeof content === 'string') {
-    return { role: message.role || 'user', content };
+    return { role: message.role || 'user', content, ...(Array.isArray(message.images) && message.images.length ? { images: message.images } : message.image ? { image: message.image } : {}) };
   }
 
   if (Array.isArray(content)) {
