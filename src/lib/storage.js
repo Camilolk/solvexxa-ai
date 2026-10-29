@@ -75,13 +75,21 @@ export function exportConversations(items) {
 }
 
 export async function importConversationsFromFile(file) {
-  const text = await file.text();
-  const items = JSON.parse(text);
-  if (!Array.isArray(items)) {
-    throw new Error('No se encontró un arreglo válido.');
+  if (!(file instanceof File)) {
+    throw new Error('Archivo inválido.');
   }
 
-  const sanitized = items.filter((item) => item && item.id && Array.isArray(item.messages));
-  await saveConversations(sanitized);
-  return sanitized;
+  try {
+    const text = await file.text();
+    const items = JSON.parse(text);
+    if (!Array.isArray(items)) {
+      throw new Error('No se encontró un arreglo válido.');
+    }
+
+    const sanitized = items.filter((item) => item && item.id && Array.isArray(item.messages));
+    await saveConversations(sanitized);
+    return sanitized;
+  } catch (error) {
+    throw new Error(error instanceof Error ? error.message : 'No se pudo importar el archivo.');
+  }
 }
