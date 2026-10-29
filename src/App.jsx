@@ -257,6 +257,8 @@ export default function App() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [imagePreviews, setImagePreviews] = useState([]);
   const [fileAttachment, setFileAttachment] = useState(null);
+  const [codeWorkspaceOpen, setCodeWorkspaceOpen] = useState(false);
+  const [workspaceCode, setWorkspaceCode] = useState('');
   const [personality, setPersonality] = useState(() => window.localStorage.getItem('solvexxa-personality') || 'friendly');
   const [customInstructions, setCustomInstructions] = useState(() => window.localStorage.getItem('solvexxa-custom-instructions') || '');
   const [memoryEnabled, setMemoryEnabled] = useState(() => window.localStorage.getItem('solvexxa-memory-enabled') === 'true');
@@ -1111,6 +1113,7 @@ export default function App() {
         <form className="composer" onSubmit={(event) => { event.preventDefault(); handleSend(); }}>
           {imagePreviews.length > 0 && <div className="image-preview">{imagePreviews.map((image, index) => <div className="image-preview-item" key={`${index}-${image.slice(0, 24)}`}><img src={image} alt={`Vista previa ${index + 1}`} /><button type="button" onClick={() => setImagePreviews((previous) => previous.filter((_, i) => i !== index))} aria-label={`Quitar imagen ${index + 1}`}>×</button></div>)}</div>}
           {fileAttachment && <div className="file-pending"><span>📄 {fileAttachment.name}</span><button type="button" onClick={() => setFileAttachment(null)} aria-label="Quitar archivo">×</button></div>}
+          {fileAttachment && /\.(js|jsx|ts|tsx|py|java|css|html|json|xml|sql|sh|php|go|rs|c|cpp|h)$/i.test(fileAttachment.name) && <button type="button" className="attach-button" onClick={() => { setWorkspaceCode(fileAttachment.content); setCodeWorkspaceOpen(true); }}>🧪 Abrir espacio de código</button>}
           {fileAttachment && /\.(js|jsx|ts|tsx|py|java|css|html|json|xml|sql|sh|php|go|rs|c|cpp|h)$/i.test(fileAttachment.name) && <button type="button" className="attach-button" onClick={() => { setDeveloperMode(true); setDraft((value) => value.trim() ? value : 'Revisa este archivo de código. Explícame su estructura, detecta errores y vulnerabilidades, y propón correcciones concretas sin reescribirlo completo.'); }}>🔍 Revisar código adjunto</button>}
           <textarea value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Escribe tu mensaje..." aria-label="Escribe tu mensaje" rows={2} disabled={isLoading} />
           <div className="composer-actions">
@@ -1126,6 +1129,23 @@ export default function App() {
             <button type="submit" className="primary" disabled={isLoading || (!draft.trim() && !imagePreviews.length && !fileAttachment)}>Enviar</button>
           </div>
         </form>
+      {codeWorkspaceOpen && fileAttachment && (
+        <div className="modal-backdrop" role="presentation" onClick={(event) => { if (event.target === event.currentTarget) setCodeWorkspaceOpen(false); }}>
+          <section className="settings-modal code-workspace" role="dialog" aria-modal="true" aria-labelledby="code-workspace-title">
+            <div className="modal-header"><h2 id="code-workspace-title">🧪 Espacio de código</h2><button type="button" onClick={() => setCodeWorkspaceOpen(false)} aria-label="Cerrar">×</button></div>
+            <p>Trabaja sobre una copia. El archivo adjunto original no se modifica.</p>
+            <div className="workspace-columns">
+              <label>Original · {fileAttachment.name}<textarea value={fileAttachment.content} readOnly spellCheck="false" /></label>
+              <label>Versión de trabajo<textarea value={workspaceCode} onChange={(event) => setWorkspaceCode(event.target.value)} spellCheck="false" /></label>
+            </div>
+            <div className="modal-actions">
+              <button type="button" className="attach-button" onClick={() => setWorkspaceCode(fileAttachment.content)}>Restaurar original</button>
+              <button type="button" className="attach-button" onClick={() => { if (navigator.clipboard) navigator.clipboard.writeText(workspaceCode).then(() => setStatusMessage('Código de trabajo copiado.')).catch(() => setError('No se pudo copiar el código.')); }}>Copiar versión de trabajo</button>
+              <button type="button" className="primary" onClick={() => { setDraft('Revisa esta versión de trabajo y dime si encuentras errores o mejoras:\n\n```\n' + workspaceCode + '\n```'); setCodeWorkspaceOpen(false); }}>Pedir revisión a la IA</button>
+            </div>
+          </section>
+        </div>
+      )}
       </main>
     </div>
   );
