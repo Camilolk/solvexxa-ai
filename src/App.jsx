@@ -147,6 +147,7 @@ export default function App() {
   const [historySearch, setHistorySearch] = useState('');
 
   const recognitionRef = useRef(null);
+  const menuTouchStartX = useRef(null);
 
   useEffect(() => {
     document.documentElement.dataset.theme = theme;
@@ -614,7 +615,28 @@ export default function App() {
 
   return (
     <div className="app-shell">
-      <aside className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}>
+      {isMobileMenuOpen && (
+        <button
+          type="button"
+          className="sidebar-backdrop"
+          aria-label="Cerrar menú"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+      )}
+      <aside
+        className={`sidebar ${isMobileMenuOpen ? 'open' : ''}`}
+        onTouchStart={(event) => {
+          menuTouchStartX.current = event.touches[0]?.clientX ?? null;
+        }}
+        onTouchEnd={(event) => {
+          const startX = menuTouchStartX.current;
+          const endX = event.changedTouches[0]?.clientX;
+          if (startX !== null && typeof endX === 'number' && startX - endX > 60) {
+            setIsMobileMenuOpen(false);
+          }
+          menuTouchStartX.current = null;
+        }}
+      >
         <div className="sidebar-header">
           <div>
             <p className="eyebrow">Solvexxa AI</p>
@@ -709,7 +731,8 @@ export default function App() {
             onClick={() =>
               setIsMobileMenuOpen((previous) => !previous)
             }
-            aria-label="Abrir historial"
+            aria-label={isMobileMenuOpen ? 'Cerrar historial' : 'Abrir historial'}
+            aria-expanded={isMobileMenuOpen}
           >
             ☰
           </button>
