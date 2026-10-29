@@ -62,33 +62,82 @@ function formatDate(value) {
   });
 }
 
+function renderInline(text, keyPrefix) {
+  const tokens = text.split(/(`[^`]+`|\*\*[^*]+\*\*|\\*[^*]+\\*)/g);
+  return tokens.map((token, index) => {
+    const key = `${keyPrefix}-inline-${index}`;
+    if (token.startsWith('`') && token.endsWith('`')) {
+      return <code className="inline-code" key={key}>{token.slice(1, -1)}</code>;
+    }
+    if (token.startsWith('**') && token.endsWith('**')) {
+      return <strong key={key}>{token.slice(2, -2)}</strong>;
+    }
+    if (token.startsWith('*') && token.endsWith('*')) {
+      return <em key={key}>{token.slice(1, -1)}</em>;
+    }
+    return token;
+  });
+}
+
 function parseMessageContent(content) {
   const safe = typeof content === 'string' ? content : String(content || '');
-  const parts = safe.split(/```([\s\S]*?)```/g);
+  const blocks = safe.split(/```([\s\S]*?)```/g);
 
-  return parts.map((part, index) => {
-    if (index % 2 === 1) {
+  return blocks.map((block, blockIndex) => {
+    if (blockIndex % 2 === 1) {
+      const firstNewline = block.indexOf('\n');
+      const language = firstNewline >= 0 ? block.slice(0, firstNewline).trim() : '';
+      const code = firstNewline >= 0 ? block.slice(firstNewline + 1) : block;
       return (
-        <pre className="code-block" key={`${index}-code`}>
-          <code>{part}</code>
-          <button
-            type="button"
-            className="copy-button"
-            onClick={() => {
-              if (navigator.clipboard) {
-                navigator.clipboard.writeText(part).catch(() => {});
-              }
-            }}
-          >
-            Copiar
-          </button>
-        </pre>
+        <div className="code-block-wrap" key={`code-${blockIndex}`}>
+          <div className="code-block-header">
+            <span>{language || 'Código'}</span>
+            <button type="button" className="copy-button" onClick={() => {
+              if (navigator.clipboard) navigator.clipboard.writeText(code).catch(() => {});
+            }}>Copiar código</button>
+          </div>
+          <pre className="code-block"><code>{code}</code></pre>
+        </div>
       );
     }
 
-    if (!part) return null;
+    if (!block) return null;
+    const lines = block.replace(/\r\n/g, '\n').split('\n');
+    const output = [];
+    let paragraph = [];
+    let listItems = [];
+    const flushParagraph = () => {
+      if (paragraph.length) {
+        output.push(<p key={`p-${blockIndex}-${output.length}`}>{renderInline(paragraph.join(' '), `p-${blockIndex}-${output.length}`)}</p>);
+        paragraph = [];
+      }
+    };
+    const flushList = () => {
+      if (listItems.length) {
+        output.push(<ul key={`ul-${blockIndex}-${output.length}`}>{listItems.map((item, i) => <li key={i}>{renderInline(item, `li-${blockIndex}-${i}`)}</li>)}</ul>);
+        listItems = [];
+      }
+    };
 
-    return <p key={`${index}-text`}>{part}</p>;
+    lines.forEach((line) => {
+      const heading = line.match(/^(#{1,3})\s+(.+)$/);
+      const list = line.match(/^\s*[-*+]\s+(.+)$/);
+      if (heading) {
+        flushParagraph(); flushList();
+        const Tag = `h${heading[1].length}`;
+        output.push(<Tag key={`h-${blockIndex}-${output.length}`}>{renderInline(heading[2], `h-${blockIndex}-${output.length}`)}</Tag>);
+      } else if (list) {
+        flushParagraph();
+        listItems.push(list[1]);
+      } else if (!line.trim()) {
+        flushParagraph(); flushList();
+      } else {
+        flushList();
+        paragraph.push(line);
+      }
+    });
+    flushParagraph(); flushList();
+    return <div className="markdown-block" key={`text-${blockIndex}`}>{output}</div>;
   });
 }
 
@@ -438,9 +487,7 @@ export default function App() {
 
   const handleSend = async () => {
     if (!activeConversation || isLoading) return;
-
     const trimmed = draft.trim();
-
     if (!trimmed && !imagePreview) return;
 
     const userMessage = {
@@ -450,7 +497,6 @@ export default function App() {
       createdAt: Date.now(),
       image: imagePreview || null,
     };
-
     const nextConversation = {
       ...activeConversation,
       model,
@@ -463,6 +509,14 @@ export default function App() {
     setImagePreview(null);
     setIsLoading(true);
     setError('');
+    setStatusMessage('Conectando con Solvexxa AI...');
+
+    const assistantMessage = {
+      id: createId(),
+      role: 'assistant',
+      content: '',
+      createdAt: Date.now(),
+    };
 
     try {
       const response = await fetch('/api/chat', {
@@ -470,51 +524,58 @@ export default function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: nextConversation.model,
-          messages: buildRequestMessages(
-            nextConversation.messages,
-            '',
-            null,
-          ),
+          messages: buildRequestMessages(nextConversation.messages, '', null),
           temperature: 0.7,
           max_tokens: 1200,
+          stream: true,
         }),
       });
 
-      let data;
-
-      try {
-        data = await response.json();
-      } catch {
-        throw new Error('La respuesta del servidor no era JSON válido.');
-      }
-
       if (!response.ok) {
-        throw new Error(
-          data?.error || 'No se pudo obtener una respuesta válida.',
-        );
+        let detail = 'No se pudo obtener una respuesta válida.';
+        try {
+          const data = await response.json();
+          detail = data?.error || detail;
+        } catch {}
+        throw new Error(detail);
       }
 
-      const assistantMessage = {
-        id: createId(),
-        role: 'assistant',
-        content: data?.content || 'No se recibió contenido de la respuesta.',
-        createdAt: Date.now(),
-      };
+      if (!response.body) {
+        throw new Error('Este navegador no permite recibir respuestas en streaming.');
+      }
 
-      const updated = {
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let content = '';
+      let hasSavedAssistant = false;
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        content += decoder.decode(value, { stream: true });
+        const partialMessage = { ...assistantMessage, content };
+        const updated = {
+          ...nextConversation,
+          messages: [...nextConversation.messages, partialMessage],
+        };
+        syncConversation(updated);
+        hasSavedAssistant = true;
+      }
+
+      content += decoder.decode();
+      if (!content && !hasSavedAssistant) {
+        throw new Error('La IA terminó sin enviar contenido.');
+      }
+
+      const finalMessage = { ...assistantMessage, content: content || 'No se recibió contenido de la respuesta.' };
+      syncConversation({
         ...nextConversation,
-        messages: [...nextConversation.messages, assistantMessage],
-      };
-
-      syncConversation(updated);
-      setActiveId(updated.id);
+        messages: [...nextConversation.messages, finalMessage],
+      });
+      setActiveId(nextConversation.id);
       setStatusMessage('Respuesta recibida.');
     } catch (err) {
-      const message =
-        err instanceof Error
-          ? err.message
-          : 'Ocurrió un error inesperado.';
-
+      const message = err instanceof Error ? err.message : 'Ocurrió un error inesperado.';
       setError(message);
       setStatusMessage('El mensaje se guardó localmente, pero la IA no respondió.');
     } finally {
