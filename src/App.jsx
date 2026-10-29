@@ -638,7 +638,7 @@ export default function App() {
       event.target.value = '';
       return;
     }
-    if (file.size > 350 * 1024 && !/\.pdf$/i.test(file.name)) {
+    if (file.size > 350 * 1024) {
       setError('El archivo supera el límite de 350 KB para poder enviarlo de forma segura.');
       event.target.value = '';
       return;
@@ -918,7 +918,7 @@ export default function App() {
           <textarea value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Escribe tu mensaje..." aria-label="Escribe tu mensaje" rows={2} disabled={isLoading} />
           <div className="composer-actions">
             <label className="attach-button">Adjuntar imagen<input type="file" accept="image/*" multiple hidden onChange={handleImagePick} /></label>
-            <label className="attach-button">Adjuntar archivo<input type="file" accept=".txt,.md,.csv,.json,.xml,.html,.js,.jsx,.ts,.tsx,.css,.py,.java,.log,.pdf,.docx" hidden onChange={handleDocumentPick} /></label>
+            <label className="attach-button">Adjuntar archivo<input type="file" accept=".txt,.md,.csv,.json,.xml,.html,.js,.jsx,.ts,.tsx,.css,.py,.java,.log" hidden onChange={handleDocumentPick} /></label>
             <button type="button" onClick={toggleVoiceInput}>{isListening ? 'Detener voz' : 'Hablar'}</button>
             <button type="submit" className="primary" disabled={isLoading || (!draft.trim() && !imagePreviews.length && !fileAttachment)}>Enviar</button>
           </div>
