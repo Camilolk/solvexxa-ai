@@ -516,3 +516,382 @@ textarea {
     justify-content: flex-end;
   }
 }
+
+/* ========================================
+   SOLVEXXA AI — PREMIUM UI UPGRADE
+   ======================================== */
+
+:root {
+  --primary: #9361ff;
+  --primary-2: #35d9f5;
+  --border: rgba(148, 163, 184, 0.14);
+  --shadow: 0 24px 70px rgba(0, 0, 0, 0.22);
+}
+
+:root[data-theme='light'] {
+  --primary: #7543e8;
+  --primary-2: #079acb;
+  --border: rgba(71, 85, 105, 0.14);
+  --shadow: 0 20px 55px rgba(67, 56, 202, 0.09);
+}
+
+html,
+body,
+#root {
+  background:
+    radial-gradient(
+      ellipse at 15% 0%,
+      rgba(124, 58, 237, 0.16),
+      transparent 38%
+    ),
+    radial-gradient(
+      ellipse at 95% 100%,
+      rgba(34, 211, 238, 0.07),
+      transparent 35%
+    ),
+    var(--bg);
+}
+
+button {
+  transition:
+    background 180ms ease,
+    border-color 180ms ease,
+    box-shadow 180ms ease,
+    transform 180ms ease,
+    opacity 180ms ease;
+}
+
+button:hover:not(:disabled) {
+  border-color: rgba(147, 97, 255, 0.48);
+  box-shadow: 0 5px 22px rgba(124, 58, 237, 0.12);
+}
+
+button:active:not(:disabled) {
+  transform: scale(0.97);
+}
+
+button:focus-visible,
+textarea:focus-visible,
+input:focus-visible,
+select:focus-visible {
+  outline: 2px solid var(--primary-2);
+  outline-offset: 3px;
+}
+
+.app-shell {
+  gap: 18px;
+  padding: 18px;
+}
+
+.sidebar,
+.chat-panel {
+  backdrop-filter: blur(22px);
+  -webkit-backdrop-filter: blur(22px);
+  border-color: var(--border);
+  box-shadow: var(--shadow);
+}
+
+.sidebar {
+  background: var(--panel);
+  border-radius: 24px;
+  padding: 20px 16px;
+}
+
+.sidebar-header {
+  padding: 4px 4px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.sidebar-header h1 {
+  letter-spacing: -0.045em;
+  font-weight: 800;
+}
+
+.conversation-list {
+  gap: 8px;
+  padding-top: 12px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.conversation-item {
+  border-color: transparent;
+  background: transparent;
+  transition: 180ms ease;
+}
+
+.conversation-item:hover {
+  background: rgba(139, 92, 246, 0.08);
+}
+
+.conversation-item.selected {
+  background:
+    linear-gradient(
+      110deg,
+      rgba(139, 92, 246, 0.19),
+      rgba(34, 211, 238, 0.07)
+    );
+  border-color: rgba(139, 92, 246, 0.32);
+  box-shadow: inset 3px 0 0 var(--primary);
+}
+
+.chat-panel {
+  border-radius: 24px;
+  background: var(--panel);
+}
+
+.topbar {
+  min-height: 76px;
+  padding: 18px 22px;
+  background: rgba(15, 23, 42, 0.12);
+  border-bottom-color: var(--border);
+}
+
+.topbar-title h2 {
+  font-weight: 750;
+  letter-spacing: -0.025em;
+}
+
+.toolbar-actions button,
+.model-bar select {
+  border-radius: 13px;
+  background-color: var(--panel-alt);
+}
+
+.model-bar {
+  padding-top: 18px;
+  padding-bottom: 4px;
+}
+
+.model-bar select {
+  max-width: 100%;
+  cursor: pointer;
+}
+
+.messages {
+  gap: 18px;
+  padding-top: 24px;
+  scroll-behavior: smooth;
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+.empty-state {
+  padding: 28px 16px;
+  animation: solvexxa-appear 450ms ease both;
+}
+
+.empty-state h3 {
+  font-size: clamp(1.5rem, 4vw, 2.25rem);
+  font-weight: 800;
+  letter-spacing: -0.045em;
+  line-height: 1.2;
+}
+
+.message {
+  padding: 17px;
+  border-radius: 20px;
+  background: var(--panel-alt);
+  border-color: var(--border);
+  overflow-wrap: anywhere;
+  animation: solvexxa-appear 220ms ease both;
+}
+
+.message.user {
+  background:
+    linear-gradient(
+      135deg,
+      rgba(124, 58, 237, 0.19),
+      rgba(34, 211, 238, 0.08)
+    );
+  border-color: rgba(139, 92, 246, 0.24);
+}
+
+.message-meta {
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.message-body {
+  line-height: 1.75;
+  overflow-wrap: anywhere;
+}
+
+.message-body pre {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.code-block {
+  border-radius: 15px;
+  background: #0b1120;
+  border-color: rgba(148, 163, 184, 0.2);
+}
+
+.copy-button {
+  background: #19243a;
+}
+
+.composer {
+  padding: 18px 22px 22px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(124, 58, 237, 0.035)
+  );
+  border-top-color: var(--border);
+}
+
+textarea {
+  width: 100%;
+  border-radius: 18px;
+  background: var(--panel-alt);
+  line-height: 1.6;
+  transition: border-color 180ms ease, box-shadow 180ms ease;
+}
+
+textarea:focus {
+  border-color: rgba(139, 92, 246, 0.65);
+  box-shadow: 0 0 0 4px rgba(139, 92, 246, 0.09);
+  outline: none;
+}
+
+.upload-button,
+.voice,
+.send-button {
+  border-radius: 15px;
+}
+
+.send-button {
+  background: linear-gradient(135deg, var(--primary), #6841e8);
+  color: #fff;
+  border: none;
+  box-shadow: 0 5px 18px rgba(124, 58, 237, 0.23);
+}
+
+.send-button:hover:not(:disabled) {
+  box-shadow: 0 7px 24px rgba(124, 58, 237, 0.35);
+}
+
+.alert {
+  border-radius: 14px;
+  backdrop-filter: blur(12px);
+}
+
+@keyframes solvexxa-appear {
+  from {
+    opacity: 0;
+    transform: translateY(7px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (min-width: 1400px) {
+  .app-shell {
+    max-width: 1800px;
+    margin-inline: auto;
+    padding: 22px;
+  }
+
+  .sidebar {
+    flex-basis: 300px;
+  }
+
+  .messages {
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+}
+
+@media (max-width: 900px) {
+  .app-shell {
+    gap: 0;
+    padding: 8px;
+    min-height: 100dvh;
+  }
+
+  .chat-panel {
+    min-width: 0;
+    border-radius: 20px;
+    min-height: calc(100dvh - 16px);
+  }
+
+  .topbar {
+    gap: 8px;
+    padding: 13px 12px;
+  }
+
+  .topbar-title h2 {
+    font-size: 1rem;
+  }
+
+  .model-bar {
+    padding: 12px 12px 0;
+  }
+
+  .model-bar label {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .model-bar select {
+    min-width: 0;
+    flex: 1;
+  }
+
+  .messages {
+    padding: 18px 12px 12px;
+    gap: 13px;
+  }
+
+  .message {
+    padding: 14px;
+    border-radius: 17px;
+  }
+
+  .composer {
+    padding: 12px;
+  }
+
+  .composer-row {
+    gap: 10px;
+  }
+
+  textarea {
+    min-height: 54px;
+    padding: 13px;
+    border-radius: 15px;
+  }
+
+  .composer-actions {
+    gap: 8px;
+  }
+
+  .upload-button,
+  .voice,
+  .send-button {
+    min-height: 44px;
+    min-width: 44px;
+    border-radius: 13px;
+  }
+
+  .sidebar {
+    border-radius: 20px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+    transition-duration: 0.01ms !important;
+  }
+  }
+  
