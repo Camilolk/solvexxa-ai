@@ -322,10 +322,10 @@ export default function App() {
         settingsDetailsRef.current.open = false;
       }
     };
-    document.addEventListener('pointerdown', closeSettingsOnOutsideInteraction);
+    document.addEventListener('click', closeSettingsOnOutsideInteraction);
     document.addEventListener('keydown', closeSettingsOnEscape);
     return () => {
-      document.removeEventListener('pointerdown', closeSettingsOnOutsideInteraction);
+      document.removeEventListener('click', closeSettingsOnOutsideInteraction);
       document.removeEventListener('keydown', closeSettingsOnEscape);
     };
   }, []);
