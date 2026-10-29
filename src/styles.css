@@ -2436,3 +2436,26 @@ textarea:focus {
   .composer-main-actions > *:focus-visible .marquee-label { animation: none; }
   .settings-modal { animation: none; }
 }
+
+
+/* SETTINGS PANEL: outside dismissal + reliable touch scrolling */
+.topbar-settings { position: relative; }
+.topbar-settings .toolbar-actions {
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+  pointer-events: auto;
+}
+.topbar-settings .toolbar-actions > * { touch-action: pan-y; }
+@media (max-width: 700px) {
+  .topbar-settings .toolbar-actions {
+    max-height: min(78dvh, 720px);
+    overflow-y: auto;
+    overflow-x: hidden;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-y;
+    scrollbar-width: thin;
+    padding-bottom: max(16px, env(safe-area-inset-bottom));
+  }
+}
