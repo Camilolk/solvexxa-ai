@@ -778,11 +778,11 @@ export default function App() {
           {error && <p className="error-message" role="alert">{error}</p>}
           {statusMessage && <p className="status-message" role="status">{statusMessage}</p>}
         </div>
-        <form className="composer" onSubmit={handleSubmit}>
+        <form className="composer" onSubmit={(event) => { event.preventDefault(); handleSend(); }}>
           {imagePreview && <div className="image-preview"><img src={imagePreview} alt="Vista previa del archivo adjunto" /><button type="button" onClick={() => setImagePreview(null)} aria-label="Quitar imagen">×</button></div>}
           <textarea value={draft} onChange={(event) => setDraft(event.target.value)} placeholder="Escribe tu mensaje..." aria-label="Escribe tu mensaje" rows={2} disabled={isLoading} />
           <div className="composer-actions">
-            <label className="attach-button">Adjuntar imagen<input type="file" accept="image/*" hidden onChange={handleImageSelect} /></label>
+            <label className="attach-button">Adjuntar imagen<input type="file" accept="image/*" hidden onChange={handleImagePick} /></label>
             <button type="button" onClick={toggleVoiceInput}>{isListening ? 'Detener voz' : 'Hablar'}</button>
             <button type="submit" className="primary" disabled={isLoading || (!draft.trim() && !imagePreview)}>Enviar</button>
           </div>
