@@ -635,8 +635,8 @@ export default function App() {
       event.target.value = '';
       return;
     }
-    if (file.size > 1024 * 1024) {
-      setError('El archivo supera el límite de 1 MB.');
+    if (file.size > 350 * 1024) {
+      setError('El archivo supera el límite de 350 KB para poder enviarlo de forma segura.');
       event.target.value = '';
       return;
     }
