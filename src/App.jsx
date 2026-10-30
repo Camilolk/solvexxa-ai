@@ -1095,6 +1095,7 @@ export default function App() {
           <details className="topbar-settings" ref={settingsDetailsRef}>
             <summary>⚙️ Ajustes</summary>
             <div className="toolbar-actions">
+            <h3 className="settings-section-title">Inteligencia</h3>
             <label className="personality-control model-control" title="Modelo de inteligencia artificial">
               <span>Modelo</span>
               <select value={model} onChange={(event) => { setModel(event.target.value); setStatusMessage(`Modelo cambiado a ${models.find((item) => item.id === event.target.value)?.name || event.target.value}.`); }} aria-label="Seleccionar modelo de IA" disabled={isLoading}>
@@ -1102,6 +1103,7 @@ export default function App() {
               </select>
             </label>
             <button type="button" className={webSearchEnabled ? "primary" : ""} onClick={() => setWebSearchEnabled((value) => !value)}>🌐 Búsqueda {webSearchEnabled ? "activada" : "desactivada"}</button>
+            <h3 className="settings-section-title">Personalización</h3>
             <label className="personality-control" title="Personalidad de Solvexxa">
               <span>Personalidad</span>
               <select value={personality} onChange={(event) => setPersonality(event.target.value)} aria-label="Personalidad de Solvexxa">
@@ -1111,6 +1113,7 @@ export default function App() {
             <button type="button" onClick={() => { const next = window.prompt('Instrucciones para la personalidad personalizada', customInstructions); if (next !== null) { setCustomInstructions(next.slice(0, 2000)); setPersonality('custom'); setStatusMessage('Personalidad personalizada guardada.'); } }}>Configurar personalidad</button>
             <button type="button" className={memoryEnabled ? 'primary' : ''} onClick={() => setMemoryEnabled((value) => !value)} title="Usa el contexto del chat actual">Memoria {memoryEnabled ? 'activada' : 'desactivada'}</button>
             <button type="button" onClick={() => { const next = window.prompt('Memoria de Solvexxa: escribe datos y preferencias que quieras que recuerde entre chats. Evita contraseñas y datos sensibles.', memoryNotes); if (next !== null) { setMemoryNotes(next.slice(0, 4000)); setStatusMessage('Memoria personal guardada en este dispositivo.'); } }}>Editar memoria</button>
+            <h3 className="settings-section-title">Conversación actual</h3>
             <button
               type="button"
               onClick={renameConversation}
