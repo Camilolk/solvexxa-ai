@@ -2616,3 +2616,50 @@ button, select, summary, .attach-button {
     background: var(--panel);
   }
 }
+
+
+/* MOBILE RECOVERY: restore normal page scrolling and prevent the composer being clipped */
+@media (max-width: 700px) {
+  html, body, #root {
+    height: auto !important;
+    min-height: 100% !important;
+    overflow-y: auto !important;
+    overflow-x: hidden !important;
+  }
+  .app-shell {
+    display: flex;
+    height: auto !important;
+    min-height: 100dvh;
+    max-height: none !important;
+    overflow: visible !important;
+    padding-bottom: max(12px, env(safe-area-inset-bottom, 0px));
+  }
+  .chat-panel {
+    display: flex;
+    flex-direction: column;
+    height: auto !important;
+    min-height: calc(100dvh - 10px);
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .topbar { flex: 0 0 auto; }
+  .message-list {
+    flex: 0 0 auto;
+    height: auto !important;
+    min-height: 35dvh;
+    max-height: none !important;
+    overflow: visible !important;
+    overscroll-behavior: auto;
+  }
+  .composer {
+    display: flex;
+    flex: 0 0 auto;
+    position: relative;
+    z-index: 2;
+    width: 100%;
+    margin-top: auto;
+    padding-bottom: max(18px, env(safe-area-inset-bottom, 0px));
+    overflow: visible;
+    background: var(--panel);
+  }
+}
