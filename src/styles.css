@@ -2459,3 +2459,109 @@ textarea:focus {
     padding-bottom: max(16px, env(safe-area-inset-bottom));
   }
 }
+
+
+/* ---------- Mobile polish: stable viewport, scrolling and readable code ---------- */
+:root {
+  --app-viewport-height: 100dvh;
+  scroll-padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@supports (height: 100svh) {
+  :root { --app-viewport-height: 100svh; }
+}
+@supports (height: 100dvh) {
+  :root { --app-viewport-height: 100dvh; }
+}
+html, body, #root { min-height: var(--app-viewport-height); }
+body { overscroll-behavior-y: none; }
+.chat-panel {
+  min-height: 0;
+  min-width: 0;
+}
+.message-list {
+  min-height: 0;
+  overflow-wrap: anywhere;
+  overscroll-behavior-y: contain;
+  scroll-behavior: smooth;
+  scrollbar-gutter: stable;
+}
+.message-content, .message-content p, .message-content li {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: normal;
+}
+.message-content pre, .message-content pre code, .code-diff {
+  max-width: 100%;
+  overflow-x: auto;
+  overscroll-behavior-x: contain;
+  -webkit-overflow-scrolling: touch;
+  tab-size: 2;
+}
+.message-content pre {
+  padding: 14px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: rgba(4, 8, 18, .72);
+}
+.message-content :not(pre) > code {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+button, select, summary, .attach-button {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+:where(button, select, textarea, summary, .attach-button):focus-visible {
+  outline: 2px solid var(--primary-2);
+  outline-offset: 3px;
+}
+.topbar-settings .toolbar-actions {
+  overscroll-behavior: contain;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+  padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+}
+.topbar-settings .toolbar-actions > * { min-width: 0; }
+.topbar-settings .toolbar-actions button,
+.topbar-settings .toolbar-actions select { min-height: 46px; }
+.topbar-settings .toolbar-actions .danger {
+  border-color: rgba(248, 113, 113, .48);
+  color: #fecaca;
+}
+.composer {
+  padding-bottom: max(14px, env(safe-area-inset-bottom, 0px));
+}
+.composer textarea {
+  max-height: min(34dvh, 240px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  resize: vertical;
+}
+@media (max-width: 700px) {
+  .app-shell {
+    min-height: var(--app-viewport-height);
+    height: auto;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .chat-panel {
+    min-height: calc(var(--app-viewport-height) - 10px);
+    height: auto;
+  }
+  .topbar-settings .toolbar-actions {
+    top: max(74px, env(safe-area-inset-top, 0px) + 58px);
+    max-height: calc(var(--app-viewport-height) - max(94px, env(safe-area-inset-top, 0px) + 78px));
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+  .message-list { scroll-padding-bottom: 24px; }
+  .composer { position: relative; }
+}
+@media (max-width: 390px) {
+  .topbar-settings .toolbar-actions { left: 9px; right: 9px; width: auto; }
+  .topbar-settings .toolbar-actions button,
+  .topbar-settings .toolbar-actions select { font-size: 13px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .message-list { scroll-behavior: auto; }
+}
